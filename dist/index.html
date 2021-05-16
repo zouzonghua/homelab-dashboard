@@ -45,7 +45,6 @@
     <ul id="navList" class="container p-2 xl:p-0 xl:mt-6 flex flex-wrap"></ul>
   </body>
   <script src="./js/lib/art-template/index.js"></script>
-  <!-- pc 端导航模版 -->
   <script id="tpl-nav-list" type="text/html">
     {{each list item i}}
     <li class="p-2 xl:p-4 w-1/2 xl:w-1/4">
@@ -70,11 +69,7 @@
         target="_blank"
         href="{{item.href}}"
       >
-        <img
-          src="{{item.icon}}"
-          alt=""
-          class="w-8 h-8 xl:w-12 xl:h-12 mr-2 xl:mr-4"
-        />
+        <img src="{{item.icon}}" alt="" class="w-8 h-8 xl:w-12 xl:h-12 mr-2 xl:mr-4" />
         <p class="text-xs xl:text-2xl truncate">{{item.title}}</p>
       </a>
     </li>
@@ -86,7 +81,7 @@
       xhr.onreadystatechange = function () {
         if (xhr.readyState == 4) {
           if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304) {
-            callback(JSON.parse(xhr.responseText))
+            callback(JSON.parse(xhr.responseText));
           }
         }
       };
@@ -94,10 +89,9 @@
       xhr.send();
     }
 
-    fetchData('data/nav.json', 'get', function(res) {
+    fetchData('data/nav.json', 'get', function (res) {
       var navListHtml = template('tpl-nav-list', res);
       document.getElementById('navList').innerHTML = navListHtml;
-    })
-
+    });
   </script>
 </html>
