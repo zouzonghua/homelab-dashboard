@@ -22,27 +22,29 @@
   >
     <div class="
           head
-          flex
           bg-white
           dark:bg-gray-700
           w-screen
-          h-24
-          py-3.5
           text-black
           dark:text-white
+          flex
+          justify-center
           "
       >
-      <div class="head__logo flex flex-none items-center">
-        <a href="#">
-          <img class="p-3 h-20 w-20 rounded-full" src="https://github.zouzonghua.cn/home/favicon.ico" alt="logo">
-        </a>
+      <div class="head__container max-w-screen-xl w-full py-3.5 h-24 flex">
+        <div class="head__logo flex flex-none items-center">
+          <a href="#">
+            <img class="p-3 h-20 w-20 rounded-full" src="https://github.zouzonghua.cn/home/favicon.ico" alt="logo">
+          </a>
+        </div>
+        <div class="head__title  flex flex-1 text-3xl items-center">
+          <h1>zonghua's home dashboard</h1>
+        </div>
       </div>
-      <div class="head__title  flex flex-1 text-3xl items-center">
-        <h1>zonghua's home dashboard</h1>
-      </div>
+
     </div>
 
-    <ul id="navList" class="container p-2 xl:p-0 xl:mt-6 flex flex-wrap"></ul>
+    <ul id="navList" class="container max-w-screen-xl p-2 xl:p-0 xl:mt-6 flex flex-wrap"></ul>
   </body>
   <script src="./js/lib/art-template/index.js"></script>
   <script id="tpl-nav-list" type="text/html">
