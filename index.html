@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>nav.zouzonghua.cn</title>
+    <link rel="stylesheet" href="./styles/style.css" />
+    <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon" />
+  </head>
+  <body
+    class="
+      bg-gray-50
+      dark:bg-gray-800
+      xl:h-screen
+      w-screen
+      flex flex-col
+      xl:justify-center
+      items-center
+      xl:flex-col
+    "
+  >
+    <input
+      class="
+        shadow-lg
+        h-14
+        my-9
+        xl:my-0
+        w-10/12
+        xl:w-1/2
+        rounded-full
+        appearance-none
+        focus:outline-none
+        placeholder-gray-500
+        text-black
+        py-2
+        pl-10
+        focus:ring-1
+      "
+      type="search"
+      name=""
+      id=""
+      placeholder="Google Search"
+    />
+    <ul id="navList" class="container p-2 xl:p-0 xl:mt-6 flex flex-wrap"></ul>
+  </body>
+  <script src="./js/lib/art-template/index.js"></script>
+  <script id="tpl-nav-list" type="text/html">
+    {{each list item i}}
+    <li class="p-2 xl:p-4 w-1/2 xl:w-1/4">
+      <a
+        class="
+          shadow-lg
+          text-black
+          dark:text-white
+          bg-white
+          dark:bg-gray-700
+          rounded-lg
+          flex
+          items-center
+          p-4
+          transition
+          duration-500
+          ease-in-out
+          transform
+          hover:-translate-y-1
+          hover:scale-105
+        "
+        target="_blank"
+        href="{{item.href}}"
+      >
+        <img src="{{item.icon}}" alt="" class="w-8 h-8 xl:w-12 xl:h-12 mr-2 xl:mr-4" />
+        <p class="text-xs xl:text-2xl truncate">{{item.title}}</p>
+      </a>
+    </li>
+    {{/each}}
+  </script>
+  <script>
+    function fetchData(url = 'data/nav.json', method = 'get', callback) {
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+          if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304) {
+            callback(JSON.parse(xhr.responseText));
+          }
+        }
+      };
+      xhr.open(method, url, true);
+      xhr.send();
+    }
+
+    fetchData('data/nav.json', 'get', function (res) {
+      var navListHtml = template('tpl-nav-list', res);
+      document.getElementById('navList').innerHTML = navListHtml;
+    });
+  </script>
+</html>
