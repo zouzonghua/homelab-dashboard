@@ -824,10 +824,6 @@ video {
     flex-direction: column;
   }
 
-  .xl\:justify-center {
-    justify-content: center;
-  }
-
   .xl\:h-12 {
     height: 3rem;
   }
