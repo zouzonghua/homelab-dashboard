@@ -600,6 +600,10 @@ video {
   align-items: center;
 }
 
+.justify-center {
+  justify-content: center;
+}
+
 .flex-1 {
   flex: 1 1 0%;
 }
@@ -632,6 +636,10 @@ video {
 
 .mr-2 {
   margin-right: 0.5rem;
+}
+
+.max-w-screen-xl {
+  max-width: 1280px;
 }
 
 .p-2 {
@@ -702,6 +710,10 @@ video {
 
 .w-1\/2 {
   width: 50%;
+}
+
+.w-full {
+  width: 100%;
 }
 
 .w-screen {
