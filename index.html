@@ -20,28 +20,26 @@
       xl:flex-col
     "
   >
-    <input
-      class="
-        shadow-lg
-        h-14
-        my-9
-        xl:my-0
-        w-10/12
-        xl:w-1/2
-        rounded-full
-        appearance-none
-        focus:outline-none
-        placeholder-gray-500
-        text-black
-        py-2
-        pl-10
-        focus:ring-1
-      "
-      type="search"
-      name=""
-      id=""
-      placeholder="Google Search"
-    />
+    <div class="head 
+                flex
+                bg-white 
+                dark:bg-gray-700
+                w-full
+                h-24
+                py-3.5
+                text-black
+                dark:text-white
+                ">
+      <div class="head__logo flex-none">
+        <a href="#">
+          <img class="p-3 h-5 w-5 rounded-full" src="logo.png" alt="dashboard logo">
+        </a>
+      </div>
+      <div class="head__title flex-1 text-3xl">
+        <h1>zonghua's home dashboard</h1>
+      </div>
+    </div>
+    
     <ul id="navList" class="container p-2 xl:p-0 xl:mt-6 flex flex-wrap"></ul>
   </body>
   <script src="./js/lib/art-template/index.js"></script>

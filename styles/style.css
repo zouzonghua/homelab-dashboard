@@ -245,11 +245,6 @@ Correct the cursor style of increment and decrement buttons in Safari.
 2. Correct the outline style in Safari.
 */
 
-[type='search'] {
-  -webkit-appearance: textfield; /* 1 */
-  outline-offset: -2px; /* 2 */
-}
-
 /**
 Remove the inner padding in Chrome and Safari on macOS.
 */
@@ -555,12 +550,6 @@ video {
   }
 }
 
-.appearance-none {
-  -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none;
-}
-
 .bg-white {
   --tw-bg-opacity: 1;
   background-color: rgba(255, 255, 255, var(--tw-bg-opacity));
@@ -611,12 +600,24 @@ video {
   align-items: center;
 }
 
+.flex-1 {
+  flex: 1 1 0%;
+}
+
+.flex-none {
+  flex: none;
+}
+
+.h-5 {
+  height: 1.25rem;
+}
+
 .h-8 {
   height: 2rem;
 }
 
-.h-14 {
-  height: 3.5rem;
+.h-24 {
+  height: 6rem;
 }
 
 .text-xs {
@@ -624,50 +625,35 @@ video {
   line-height: 1rem;
 }
 
-.my-9 {
-  margin-top: 2.25rem;
-  margin-bottom: 2.25rem;
+.text-3xl {
+  font-size: 1.875rem;
+  line-height: 2.25rem;
 }
 
 .mr-2 {
   margin-right: 0.5rem;
 }
 
-.focus\:outline-none:focus {
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-}
-
 .p-2 {
   padding: 0.5rem;
+}
+
+.p-3 {
+  padding: 0.75rem;
 }
 
 .p-4 {
   padding: 1rem;
 }
 
-.py-2 {
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
+.py-3 {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
 }
 
-.pl-10 {
-  padding-left: 2.5rem;
-}
-
-.placeholder-gray-500::-moz-placeholder {
-  --tw-placeholder-opacity: 1;
-  color: rgba(107, 114, 128, var(--tw-placeholder-opacity));
-}
-
-.placeholder-gray-500:-ms-input-placeholder {
-  --tw-placeholder-opacity: 1;
-  color: rgba(107, 114, 128, var(--tw-placeholder-opacity));
-}
-
-.placeholder-gray-500::placeholder {
-  --tw-placeholder-opacity: 1;
-  color: rgba(107, 114, 128, var(--tw-placeholder-opacity));
+.py-3\.5 {
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
 }
 
 * {
@@ -688,12 +674,6 @@ video {
   --tw-ring-shadow: 0 0 #0000;
 }
 
-.focus\:ring-1:focus {
-  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
-  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color);
-  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
-}
-
 .text-black {
   --tw-text-opacity: 1;
   color: rgba(0, 0, 0, var(--tw-text-opacity));
@@ -712,6 +692,10 @@ video {
   white-space: nowrap;
 }
 
+.w-5 {
+  width: 1.25rem;
+}
+
 .w-8 {
   width: 2rem;
 }
@@ -720,8 +704,8 @@ video {
   width: 50%;
 }
 
-.w-10\/12 {
-  width: 83.333333%;
+.w-full {
+  width: 100%;
 }
 
 .w-screen {
@@ -861,11 +845,6 @@ video {
     line-height: 2rem;
   }
 
-  .xl\:my-0 {
-    margin-top: 0px;
-    margin-bottom: 0px;
-  }
-
   .xl\:mr-4 {
     margin-right: 1rem;
   }
@@ -884,10 +863,6 @@ video {
 
   .xl\:w-12 {
     width: 3rem;
-  }
-
-  .xl\:w-1\/2 {
-    width: 50%;
   }
 
   .xl\:w-1\/4 {
