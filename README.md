@@ -1,4 +1,4 @@
-# [nav-website](https://zouzonghua.github.io)
+# [home](https://zouzonghua.github.io/home/)
 
 ## quick start
 
