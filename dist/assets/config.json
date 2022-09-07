@@ -1,0 +1,81 @@
+{
+  "date": "2022-09-07",
+  "title": "zonghua's home server dashboard",
+  "columns": "4",
+  "items": [
+    {
+      "name": "Media",
+      "icon": "fa-solid fa-photo-film",
+      "list": [
+        {
+         "name": "Jellyfin",
+          "logo": "assets/icons/jellyfin.png",
+          "url": "http://192.168.1.158:8096",
+          "target": "_blank"
+        }
+      ]
+    },
+    {
+      "name": "Services",
+      "icon": "fa-solid fa-stream",
+      "list": [
+        {
+         "name": "Bitwarden",
+          "logo": "assets/icons/vaultwarden.png",
+          "url": "https://bitr.zouzonghua.cn/",
+          "target": "_blank"
+        },
+        {
+         "name": "Transmission",
+          "logo": "assets/icons/transmission.png",
+          "url": "http://192.168.1.158:9091",
+          "target": "_blank"
+        }
+      ]
+    },
+    {
+      "name": "System",
+      "icon": "fa-solid fa-cog",
+      "list": [
+        {
+         "name": "Padavan",
+          "logo": "assets/icons/padavan.png",
+          "url": "http://192.168.1.1",
+          "target": "_blank"
+        },
+        {
+         "name": "OpenWrt",
+          "logo": "assets/icons/openwrt.png",
+          "url": "http://192.168.1.254",
+          "target": "_blank"
+        },
+        {
+         "name": "Portainer",
+          "logo": "assets/icons/portainer.png",
+          "url": "http://192.168.1.158:9000",
+          "target": "_blank"
+        }
+
+      ]
+    },
+    {
+      "name": "Home Automation",
+      "icon": "fa-solid fa-home",
+      "list": [
+        {
+         "name": "Home Assistant",
+          "logo": "assets/icons/homeassistant.png",
+          "url": "http://192.168.1.158:8123",
+          "target": "_blank"
+        },
+        {
+         "name": "ESPHome",
+          "logo": "assets/icons/ESPHome.svg",
+          "url": "http://192.168.1.158:6052",
+          "target": "_blank"
+        }
+      ]
+    }
+  ]
+}
+
