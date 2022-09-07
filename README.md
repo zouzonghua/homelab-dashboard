@@ -1,5 +1,4 @@
-# [preview](https://zouzonghua.github.io/homelab-dashboard
-/)
+# [preview](https://zouzonghua.github.io/homelab-dashboard/)
 
 ## quick start
 
