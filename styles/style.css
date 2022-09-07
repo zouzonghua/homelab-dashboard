@@ -561,14 +561,19 @@ video {
 }
 
 @media (prefers-color-scheme: dark) {
-  .dark\:bg-gray-700 {
+  .dark\:bg-dark-700 {
     --tw-bg-opacity: 1;
-    background-color: rgba(55, 65, 81, var(--tw-bg-opacity));
+    background-color: rgba(33, 38, 45, var(--tw-bg-opacity));
   }
 
-  .dark\:bg-gray-800 {
+  .dark\:bg-dark-800 {
     --tw-bg-opacity: 1;
-    background-color: rgba(31, 41, 55, var(--tw-bg-opacity));
+    background-color: rgba(22, 27, 34, var(--tw-bg-opacity));
+  }
+
+  .dark\:bg-dark-900 {
+    --tw-bg-opacity: 1;
+    background-color: rgba(13, 17, 22, var(--tw-bg-opacity));
   }
 }
 
