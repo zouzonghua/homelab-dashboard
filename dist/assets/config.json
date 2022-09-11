@@ -30,6 +30,12 @@
           "logo": "assets/icons/transmission.png",
           "url": "http://192.168.1.158:9091",
           "target": "_blank"
+        },
+        {
+         "name": "Gitea",
+          "logo": "assets/icons/gitea.png",
+          "url": "https://git.zouzonghua.cn",
+          "target": "_blank"
         }
       ]
     },
