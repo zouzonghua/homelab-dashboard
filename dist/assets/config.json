@@ -36,6 +36,12 @@
           "logo": "assets/icons/gitea.svg",
           "url": "https://git.zouzonghua.cn",
           "target": "_blank"
+        },
+        {
+         "name": "Jackett",
+          "logo": "assets/icons/jackett.png",
+          "url": "http://192.168.1.158:9117/",
+          "target": "_blank"
         }
       ]
     },
