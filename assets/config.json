@@ -33,7 +33,7 @@
         },
         {
          "name": "Gitea",
-          "logo": "assets/icons/gitea.png",
+          "logo": "assets/icons/gitea.svg",
           "url": "https://git.zouzonghua.cn",
           "target": "_blank"
         }
