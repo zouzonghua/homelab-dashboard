@@ -42,6 +42,12 @@
           "logo": "assets/icons/gitea.svg",
           "url": "https://git.zouzonghua.cn",
           "target": "_blank"
+        },
+        {
+         "name": "Miniflux",
+          "logo": "https://miniflux.app/favicon.ico",
+          "url": "https://rss.zouzonghua.cn",
+          "target": "_blank"
         }
       ]
     },
