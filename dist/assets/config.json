@@ -10,7 +10,13 @@
         {
          "name": "Jellyfin",
           "logo": "assets/icons/jellyfin.png",
-          "url": "http://192.168.1.158:8096",
+          "url": "http://192.168.1.203:8096",
+          "target": "_blank"
+        },
+        {
+         "name": "Navidrome",
+          "logo": "https://www.navidrome.org/favicons/favicon.ico",
+          "url": "http://192.168.1.203:4533",
           "target": "_blank"
         }
       ]
@@ -28,13 +34,13 @@
         {
          "name": "Transmission",
           "logo": "assets/icons/transmission.png",
-          "url": "http://192.168.1.158:9091",
+          "url": "http://192.168.1.203:9091",
           "target": "_blank"
         },
         {
          "name": "Jackett",
           "logo": "assets/icons/jackett.png",
-          "url": "http://192.168.1.158:9117/",
+          "url": "http://192.168.1.203:9117/",
           "target": "_blank"
         },
         {
@@ -70,7 +76,7 @@
         {
          "name": "Portainer",
           "logo": "assets/icons/portainer.png",
-          "url": "http://192.168.1.158:9000",
+          "url": "http://192.168.1.203:9000",
           "target": "_blank"
         }
 
@@ -83,13 +89,13 @@
         {
          "name": "Home Assistant",
           "logo": "assets/icons/homeassistant.png",
-          "url": "http://192.168.1.158:8123",
+          "url": "http://192.168.1.203:8123",
           "target": "_blank"
         },
         {
          "name": "ESPHome",
           "logo": "assets/icons/ESPHome.svg",
-          "url": "http://192.168.1.158:6052",
+          "url": "http://192.168.1.203:6052",
           "target": "_blank"
         }
       ]
