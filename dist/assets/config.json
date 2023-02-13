@@ -78,8 +78,13 @@
           "logo": "assets/icons/portainer.png",
           "url": "http://192.168.1.203:9000",
           "target": "_blank"
+        },
+        {
+         "name": "Proxmox VE",
+          "logo": "https://pve.proxmox.com/mediawiki/resources/assets/proxmox_logo.png?ffc80",
+          "url": "https://192.168.1.2:8006",
+          "target": "_blank"
         }
-
       ]
     },
     {
