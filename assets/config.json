@@ -18,6 +18,12 @@
           "logo": "https://raw.githubusercontent.com/navidrome/navidrome/master/resources/logo-192x192.png",
           "url": "http://192.168.1.203:4533",
           "target": "_blank"
+        },
+        {
+         "name": "PhotoPrism",
+          "logo": "https://www.photoprism.app/static/icons/logo.svg",
+          "url": "http://192.168.1.203:2342",
+          "target": "_blank"
         }
       ]
     },
