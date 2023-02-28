@@ -12,3 +12,12 @@ yarn start
 yarn build
 
 ```
+
+
+## Installation
+
+## Features
+
+## Documentation
+
+## Screenshots
