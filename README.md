@@ -1,8 +1,8 @@
-# homelab-dashboard
+# Homelab Dashboard
 
 ## [Check out our Live Demo!](https://zouzonghua.github.io/homelab-dashboard/)
 
-## quick start
+## Quick start
 
 ```
 yarn install
