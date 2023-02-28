@@ -21,3 +21,9 @@ yarn build
 ## Documentation
 
 ## Screenshots
+
+## License
+
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/zouzonghua/homelab-dashboard/blob/main/LICENSE)
+
+Copyright (c) 2021 - Now zouzonghua
