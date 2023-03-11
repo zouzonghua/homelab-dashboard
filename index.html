@@ -104,25 +104,42 @@
   </script>
 
   <script>
+fetchData('assets/config.json', 'get', displayNav, handleError);
 
-    function fetchData(url = 'assets/config.json', method = 'get', callback) {
-      var xhr = new XMLHttpRequest();
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) {
-          if ((xhr.status >= 200 && xhr.status < 300) || xhr.status == 304) {
-            callback(JSON.parse(xhr.responseText));
-          }
-        }
-      };
-      xhr.open(method, url, true);
-      xhr.send();
+// Fetch data from the server
+function fetchData(url, method, callback, errorCallback) {
+  var xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == 4) {
+      if (isSuccess(xhr.status)) {
+        callback(JSON.parse(xhr.responseText));
+      } else {
+        errorCallback(xhr);
+      }
     }
+  };
+  xhr.open(method, url, true);
+  xhr.send();
+}
 
-    fetchData('assets/config.json', 'get', function (res) {
-      var navListHtml = template('tpl-nav-list', res);
-      document.querySelector('title').innerHTML = res.title
-      document.querySelector('.head__title').innerHTML = res.title
-      document.querySelector('#navList').innerHTML = navListHtml;
-    });
+// Display the navigation links
+function displayNav(res) {
+  document.querySelector('title').innerHTML = res.title
+  document.querySelector('.head__title').innerHTML = res.title
+  document.querySelector('#navList').innerHTML = template('tpl-nav-list', res);
+}
+
+// Check if the status code is in the success range
+function isSuccess(status) {
+  return (status >= 200 && status < 300 || status == 304);
+}
+
+// Handle error
+function handleError(req) {
+  if (!isSuccess(req.status)) {
+    throw new Error(req.statusText);
+  }
+}
+
   </script>
 </html>
