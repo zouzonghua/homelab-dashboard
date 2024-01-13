@@ -1,4 +1,5 @@
 # Homelab Dashboard
+- home server dashboard
 
 ## [Check out our Live Demo!](https://zouzonghua.github.io/homelab-dashboard/)
 
