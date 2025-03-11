@@ -27,16 +27,16 @@ git clone https://github.com/zouzonghua/homelab-dashboard.git
 cd homelab-dashboard
 
 # 安装依赖
-yarn install
+npm install
 
 # 启动开发服务器
-yarn dev
+npm run dev
 
 # 构建生产版本
-yarn build
+npm run build
 
 # 预览生产构建
-yarn preview
+npm run preview
 ```
 
 ## 安装部署
@@ -44,21 +44,35 @@ yarn preview
 ### 手动部署
 
 1. 构建项目
+
 ```bash
-yarn build
+npm run build
 ```
+
 2. 将 `dist` 目录下的文件部署到你的 Web 服务器
 
 ## 配置说明
 
-配置文件位于 `src/config/config.js`，你可以根据需要修改以下配置：
+配置文件位于 `src/assets/config.json`，你可以根据需要修改以下配置：
 
 ```javascript
 {
-  "title": "Homelab Dashboard",
-  "theme": "light", // light 或 dark
-  "services": [
+  "title": "zonghua's homelab dashboard", // 标题
+  "columns": "4", // 列数
+  "items": [
     // 你的服务配置
+    {
+      "name": "Media", // 服务名称
+      "icon": "fa-solid fa-photo-film", // 图标
+      "list": [
+        {
+          "name": "Jellyfin", // 服务名称
+          "logo": "assets/icons/jellyfin.png", // 图标或者网络图标
+          "url": "http://192.168.1.203:8096", // 链接
+          "target": "_blank" // 打开方式
+        }
+      ]
+    },
   ]
 }
 ```
@@ -88,4 +102,3 @@ yarn build
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/zouzonghua/homelab-dashboard/blob/main/LICENSE)
 
 Copyright (c) 2021 - Now zouzonghua
-
