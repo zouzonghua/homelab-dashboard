@@ -30,7 +30,7 @@ jobs:
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          token: ${{ secrets.ACCESS_TOKEN }}
-          repository-name: zouzonghua/home
-          branch: gh-pages
-          folder: dist
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          REPOSITORY_NAME: zouzonghua/home
+          BRANCH: gh-pages
+          FOLDER: dist
