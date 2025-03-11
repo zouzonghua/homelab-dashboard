@@ -6,3 +6,6 @@
 
 # production
 /dist/styles/**
+
+# cursorrules
+.cursorrules

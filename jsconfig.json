@@ -1,0 +1,10 @@
+// 在项目根目录下，创建或更新 `jsconfig.json` 文件，以便 VS Code 能够识别 `@` 别名并提供代码补全和提示。以下是示例内容：
+{
+    "compilerOptions": {
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["src/*"]
+      }
+    },
+    "include": ["src/**/*"]
+}

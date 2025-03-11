@@ -11,17 +11,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           persist-credentials: false
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
       - name: Build
-        run: yarn && yarn build
+        run: npm run build
 
       - name: Deploy
-        uses: JamesIves/github-pages-deploy-action@4.2.0
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
-          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-          REPOSITORY_NAME: zouzonghua/home
-          BRANCH: gh-pages
-          FOLDER: dist
+          token: ${{ secrets.ACCESS_TOKEN }}
+          repository-name: zouzonghua/home
+          branch: gh-pages
+          folder: dist
