@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types'
 import Avatar from '@/assets/icons/Avatar.jpg'
+import ThemeToggle from './ThemeToggle'
 
 const Header = ({ title }) => {
   return (
@@ -7,11 +8,14 @@ const Header = ({ title }) => {
       <div className="head__container max-w-screen-xl w-full py-3.5 h-24 flex">
         <div className="head__logo flex flex-none items-center">
           <a href="https://zouzonghua.cn/" tabIndex="0" aria-label="访问个人网站">
-            <img className="p-3 h-20 w-20 rounded-full" src={Avatar} alt="logo" />
+            <img className="p-3 h-16 w-16 md:h-20 md:w-20 rounded-full" src={Avatar} alt="logo" />
           </a>
         </div>
-        <div className="head__title flex flex-1 text-3xl items-center">
+        <div className="head__title flex flex-1 text-xl md:text-3xl items-center">
           <h1>{title}</h1>
+        </div>
+        <div className="flex items-center justify-end pr-4">
+          <ThemeToggle />
         </div>
       </div>
     </div>
@@ -22,4 +26,4 @@ Header.propTypes = {
   title: PropTypes.string.isRequired
 }
 
-export default Header 
+export default Header
