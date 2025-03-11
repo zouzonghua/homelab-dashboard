@@ -3,7 +3,8 @@ import ServiceItem from './ServiceItem'
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPhotoVideo, faStream, faServer, faHome } from "@fortawesome/free-solid-svg-icons";
-const ServiceCategory = ({ category }) => {
+
+const ServiceCategory = ({ category, onEditService }) => {
   // 根据类别名称选择图标
   const getIcon = (categoryName) => {
     switch(categoryName.toLowerCase()) {
@@ -20,6 +21,12 @@ const ServiceCategory = ({ category }) => {
     }
   };
 
+  const handleEditService = (updatedService, index) => {
+    if (onEditService) {
+      onEditService(category.name, updatedService, index);
+    }
+  };
+
   return (
     <div className="flex flex-col w-full p-3">
       <h2 className="group-title truncate text-2xl mt-6 mb-5 flex items-center">
@@ -31,7 +38,10 @@ const ServiceCategory = ({ category }) => {
       <ul>
         {category.list.map((service, index) => (
           <li key={index}>
-            <ServiceItem service={service} />
+            <ServiceItem 
+              service={service} 
+              onEdit={(updatedService) => handleEditService(updatedService, index)} 
+            />
           </li>
         ))}
       </ul>
@@ -44,7 +54,8 @@ ServiceCategory.propTypes = {
     name: PropTypes.string.isRequired,
     icon: PropTypes.string,
     list: PropTypes.array.isRequired
-  }).isRequired
+  }).isRequired,
+  onEditService: PropTypes.func
 }
 
 export default ServiceCategory 
