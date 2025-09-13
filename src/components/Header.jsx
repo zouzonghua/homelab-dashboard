@@ -1,7 +1,9 @@
 import PropTypes from 'prop-types'
-import Avatar from '@/assets/icons/Avatar.jpg'
+// import Avatar from '@/assets/icons/Avatar.jpg'
 import ThemeToggle from './ThemeToggle'
 import ConfigTools from './ConfigTools'
+
+const  Avatar = 'https://avatars.githubusercontent.com/u/53508103?v=4'
 
 const Header = ({ title, onExportConfig, onImportConfig }) => {
   return (
