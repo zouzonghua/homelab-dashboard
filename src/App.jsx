@@ -433,6 +433,12 @@ function App() {
                 handleEditService(editingService.categoryName, updatedService, editingService.serviceIndex)
               }
               onCancel={() => setEditingService(null)}
+              onDelete={() => {
+                if (window.confirm(`确定要删除服务 "${editingService.service.name}" 吗？`)) {
+                  handleDeleteService(editingService.categoryName, editingService.serviceIndex);
+                  setEditingService(null);
+                }
+              }}
             />
           </div>
         </div>
@@ -473,6 +479,12 @@ function App() {
                 handleEditCategory(editingCategory.categoryIndex, updatedCategory)
               }
               onCancel={() => setEditingCategory(null)}
+              onDelete={() => {
+                if (window.confirm(`确定要删除分类 "${editingCategory.category.name}" 吗？\n此操作将删除该分类下的所有服务！`)) {
+                  handleDeleteCategory(editingCategory.category.name);
+                  setEditingCategory(null);
+                }
+              }}
             />
           </div>
         </div>

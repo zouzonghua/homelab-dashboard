@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import PropTypes from 'prop-types'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSave, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 
-const ServiceEditForm = ({ service, onSave, onCancel }) => {
+const ServiceEditForm = ({ service, onSave, onCancel, onDelete }) => {
   const [formData, setFormData] = useState({
     name: service.name,
     logo: service.logo,
@@ -79,22 +79,42 @@ const ServiceEditForm = ({ service, onSave, onCancel }) => {
         </select>
       </div>
       
-      <div className="flex justify-end space-x-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 bg-gray-200 dark:bg-dark-600 rounded-md hover:bg-gray-300 dark:hover:bg-dark-500 transition-colors text-white dark:text-black"
-        >
-          <FontAwesomeIcon icon={faTimes} className="mr-1" />
-          取消
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-        >
-          <FontAwesomeIcon icon={faSave} className="mr-1" />
-          保存
-        </button>
+      <div className="flex justify-between items-center">
+        {/* 删除按钮 - 左侧 */}
+        {onDelete && (
+          <button
+            type="button"
+            onClick={onDelete}
+            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
+          >
+            <FontAwesomeIcon icon={faTrash} className="mr-1" />
+            删除
+          </button>
+        )}
+
+        {/* 取消和保存按钮 - 右侧 */}
+        <div className="flex space-x-2 ml-auto">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="
+            px-4 py-2
+            bg-gray-100 hover:bg-gray-300
+            dark:bg-gray-400 dark:hover:bg-gray-500
+            rounded-md
+            transition-colors"
+          >
+            <FontAwesomeIcon icon={faTimes} className="mr-1" />
+            取消
+          </button>
+          <button
+            type="submit"
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          >
+            <FontAwesomeIcon icon={faSave} className="mr-1" />
+            保存
+          </button>
+        </div>
       </div>
     </form>
   );
@@ -108,7 +128,8 @@ ServiceEditForm.propTypes = {
     target: PropTypes.string
   }).isRequired,
   onSave: PropTypes.func.isRequired,
-  onCancel: PropTypes.func.isRequired
+  onCancel: PropTypes.func.isRequired,
+  onDelete: PropTypes.func
 };
 
-export default ServiceEditForm; 
+export default ServiceEditForm;

@@ -140,30 +140,16 @@ const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDele
           </span>
           {category.name}
         </span>
-        {/* 编辑和删除分类按钮 - 仅在编辑模式下显示 */}
-        {isEditMode && (
-          <div className="flex space-x-1 text-lg">
-            {onEditCategory && (
-              <button
-                onClick={onEditCategory}
-                className="p-2 rounded-full transition-colors"
-                aria-label={`编辑分类 ${category.name}`}
-                title="编辑分类"
-              >
-                <FontAwesomeIcon icon={faEdit} />
-              </button>
-            )}
-            {onDeleteCategory && (
-              <button
-                onClick={handleDeleteCategory}
-                className="p-2 rounded-full transition-colors"
-                aria-label={`删除分类 ${category.name}`}
-                title="删除分类"
-              >
-                <FontAwesomeIcon icon={faTrash} />
-              </button>
-            )}
-          </div>
+        {/* 编辑分类按钮 - 仅在编辑模式下显示 */}
+        {isEditMode && onEditCategory && (
+          <button
+            onClick={onEditCategory}
+            className="p-2 rounded-full transition-colors text-lg"
+            aria-label={`编辑分类 ${category.name}`}
+            title="编辑分类"
+          >
+            <FontAwesomeIcon icon={faEdit} />
+          </button>
         )}
       </h2>
       <DndContext
