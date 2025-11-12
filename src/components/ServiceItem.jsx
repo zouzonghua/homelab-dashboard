@@ -1,21 +1,17 @@
 import { useState } from 'react'
 import PropTypes from 'prop-types'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
-import ServiceEditForm from './ServiceEditForm'
+import { faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
 
-const ServiceItem = ({ service, onEdit }) => {
+const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProps }) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
 
   const handleClick = () => {
-    if (!isEditing) {
-      window.open(service.url, service.target || '_blank')
-    }
+    window.open(service.url, service.target || '_blank')
   }
 
   const handleKeyDown = (e) => {
-    if (!isEditing && (e.key === 'Enter' || e.key === ' ')) {
+    if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       handleClick()
     }
@@ -40,37 +36,11 @@ const ServiceItem = ({ service, onEdit }) => {
 
   const handleEditClick = (e) => {
     e.stopPropagation();
-    setIsEditing(true);
-  }
-
-  const handleSave = (updatedService) => {
-    if (onEdit) {
-      onEdit({
-        ...service,
-        ...updatedService
-      });
-    }
-    setIsEditing(false);
-  }
-
-  const handleCancel = () => {
-    setIsEditing(false);
-  }
-
-  if (isEditing) {
-    return (
-      <div className="transform transition-all duration-300 ease-in-out animate-fadeIn">
-        <ServiceEditForm 
-          service={service} 
-          onSave={handleSave} 
-          onCancel={handleCancel} 
-        />
-      </div>
-    );
+    onOpenEdit();
   }
 
   return (
-    <div 
+    <div
       className="shadow-lg text-black dark:text-white bg-white dark:bg-dark-700 rounded-lg flex items-center p-4 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 mb-6 cursor-pointer relative"
       onClick={handleClick}
       onKeyDown={handleKeyDown}
@@ -80,21 +50,42 @@ const ServiceItem = ({ service, onEdit }) => {
       aria-label={`访问 ${service.name}`}
       role="button"
     >
-      <img 
+      {/* Logo - 编辑模式下可拖拽 */}
+      <img
+        {...(isEditMode ? dragHandleProps : {})}
         src={getImagePath(service.logo)}
-        alt={`${service.name} logo`} 
-        className="w-8 h-8 xl:w-12 xl:h-12 mr-2 xl:mr-4 object-contain"
+        alt={`${service.name} logo`}
+        className={`w-8 h-8 xl:w-12 xl:h-12 mr-2 xl:mr-4 object-contain ${
+          isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
+        }`}
+        title={isEditMode ? '拖拽排序' : ''}
+        onClick={(e) => isEditMode && e.stopPropagation()}
       />
       <p className="font-bold text-lg truncate">{service.name}</p>
-      
-      {isHovered && (
-        <button
-          className="absolute top-2 right-2 p-1  rounded-full opacity-80 hover:opacity-100 transition-opacity"
-          onClick={handleEditClick}
-          aria-label={`编辑 ${service.name}`}
-        >
-          <FontAwesomeIcon icon={faEdit} className="text-gray-700 dark:text-gray-300" />
-        </button>
+
+      {/* 编辑和删除按钮 - 仅在编辑模式和悬停时显示 */}
+      {isEditMode && isHovered && (
+        <div className="absolute top-2 right-2 flex space-x-1">
+          <button
+            className="p-1 rounded-full opacity-80 hover:opacity-100 transition-opacity bg-white dark:bg-dark-800"
+            onClick={handleEditClick}
+            aria-label={`编辑 ${service.name}`}
+          >
+            <FontAwesomeIcon icon={faEdit} />
+          </button>
+          {onDelete && (
+            <button
+              className="p-1 rounded-full opacity-80 hover:opacity-100 transition-opacity bg-white dark:bg-dark-800"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              aria-label={`删除 ${service.name}`}
+            >
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
+          )}
+        </div>
       )}
     </div>
   )
@@ -107,7 +98,10 @@ ServiceItem.propTypes = {
     url: PropTypes.string.isRequired,
     target: PropTypes.string
   }).isRequired,
-  onEdit: PropTypes.func
+  onOpenEdit: PropTypes.func,
+  onDelete: PropTypes.func,
+  isEditMode: PropTypes.bool,
+  dragHandleProps: PropTypes.object
 }
 
 export default ServiceItem 

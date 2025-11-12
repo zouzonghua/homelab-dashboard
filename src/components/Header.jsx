@@ -1,11 +1,13 @@
 import PropTypes from 'prop-types'
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus, faEdit, faCheck } from "@fortawesome/free-solid-svg-icons";
 // import Avatar from '@/assets/icons/Avatar.jpg'
 import ThemeToggle from './ThemeToggle'
 import ConfigTools from './ConfigTools'
 
 const  Avatar = 'https://avatars.githubusercontent.com/u/53508103?v=4'
 
-const Header = ({ title, onExportConfig, onImportConfig }) => {
+const Header = ({ title, onExportConfig, onImportConfig, onAddCategory, isEditMode, onToggleEditMode }) => {
   return (
     <div className="head bg-white dark:bg-dark-800 dark:text-white w-screen text-black flex justify-center">
       <div className="head__container max-w-screen-xl w-full py-3.5 h-24 flex">
@@ -18,10 +20,36 @@ const Header = ({ title, onExportConfig, onImportConfig }) => {
           <h1>{title}</h1>
         </div>
         <div className="flex items-center justify-end pr-4 space-x-4">
-          <ConfigTools 
+          <ConfigTools
             onExport={onExportConfig}
             onImport={onImportConfig}
           />
+
+          {/* 编辑模式切换按钮 */}
+          <button
+            onClick={onToggleEditMode}
+            className={`p-2 rounded-full transition-all`}
+            aria-label={isEditMode ? "退出编辑模式" : "进入编辑模式"}
+            title={isEditMode ? "退出编辑模式" : "进入编辑模式"}
+          >
+            <FontAwesomeIcon
+              icon={isEditMode ? faCheck : faEdit}
+              className="text-xl"
+            />
+          </button>
+
+          {/* 添加分类按钮 - 仅在编辑模式下显示 */}
+          {isEditMode && (
+            <button
+              onClick={onAddCategory}
+              className="p-2 rounded-full transition-colors"
+              aria-label="添加新分类"
+              title="添加新分类"
+            >
+              <FontAwesomeIcon icon={faPlus} className="text-xl text-gray-700 dark:text-gray-300" />
+            </button>
+          )}
+
           <ThemeToggle />
         </div>
       </div>
@@ -33,6 +61,9 @@ Header.propTypes = {
   title: PropTypes.string.isRequired,
   onExportConfig: PropTypes.func.isRequired,
   onImportConfig: PropTypes.func.isRequired,
+  onAddCategory: PropTypes.func.isRequired,
+  isEditMode: PropTypes.bool.isRequired,
+  onToggleEditMode: PropTypes.func.isRequired,
 }
 
 export default Header
