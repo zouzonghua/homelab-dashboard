@@ -18,7 +18,7 @@
 
 ## 快速开始
 
-确保你的系统已安装 Node.js (>= 14.x) 和包管理器。
+确保你的系统已安装 Node.js、Go 和包管理器。
 
 ```bash
 # 克隆项目
@@ -33,12 +33,33 @@ npm install
 # 启动开发服务器
 npm run dev
 
+# 启动 Go API + React 构建产物
+npm run e2e:server
+
 # 构建生产版本
 npm run build
 
 # 预览生产构建
 npm run preview
 ```
+
+## 后端与数据持久化
+
+项目现在提供 Go API 和 SQLite 持久化：
+
+- `GET /api/config`：读取仪表盘配置
+- `PUT /api/config`：保存完整配置
+- 默认数据库路径：`/data/homelab.db`
+- 默认静态资源目录：`dist`
+- 默认端口：`8080`
+
+可通过环境变量覆盖：
+
+```bash
+HOMELAB_DB_PATH=.tmp/homelab.db HOMELAB_STATIC_DIR=dist PORT=8080 go run ./cmd/server
+```
+
+首次启动时，如果 SQLite 为空，会从 `src/assets/config.json` 导入默认配置。
 
 ## 安装部署
 
@@ -51,6 +72,27 @@ npm run build
 ```
 
 2. 将 `dist` 目录下的文件部署到你的 Web 服务器
+
+### Docker 部署
+
+```bash
+docker compose up --build
+```
+
+访问 `http://localhost:8080`，SQLite 数据会保存在 Docker volume `homelab-data` 中。
+
+## 测试
+
+```bash
+# Go 单元/集成测试
+go test ./...
+
+# 前端单元测试
+npm test -- src/utils/api.test.jsx
+
+# E2E 测试
+npm run test:e2e
+```
 
 ## 配置说明
 

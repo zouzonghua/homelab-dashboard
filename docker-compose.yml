@@ -1,0 +1,11 @@
+services:
+  homelab-dashboard:
+    build: .
+    ports:
+      - "8080:8080"
+    volumes:
+      - homelab-data:/data
+    restart: unless-stopped
+
+volumes:
+  homelab-data:

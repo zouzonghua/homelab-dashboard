@@ -5,7 +5,7 @@ import CategoryAddForm from './components/CategoryAddForm'
 import CategoryEditForm from './components/CategoryEditForm'
 import ServiceAddForm from './components/ServiceAddForm'
 import ServiceEditForm from './components/ServiceEditForm'
-import { fetchConfig } from './utils/api'
+import { fetchConfig, saveConfig } from './utils/api'
 import {
   saveConfigToStorage,
   loadConfigFromStorage,
@@ -28,21 +28,19 @@ function App() {
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        // 先尝试从本地存储加载
+        const data = await fetchConfig();
+        setConfig(data);
+        document.title = data.title || "HomeLab Dashboard";
+      } catch (err) {
         const storedConfig = loadConfigFromStorage();
-        
+
         if (storedConfig) {
           setConfig(storedConfig);
           document.title = storedConfig.title || "HomeLab Dashboard";
         } else {
-          // 如果本地没有，再从默认配置加载
-          const data = await fetchConfig();
-          setConfig(data);
-          document.title = data.title || "HomeLab Dashboard";
+          setError('配置加载失败');
+          console.error(err);
         }
-      } catch (err) {
-        setError('配置加载失败');
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -50,6 +48,26 @@ function App() {
 
     loadConfig();
   }, []);
+
+  const persistConfig = async (nextConfig, successMessage) => {
+    try {
+      await saveConfig(nextConfig);
+      saveConfigToStorage(nextConfig);
+      toast.success(successMessage, {
+        autoClose: 2000,
+        hideProgressBar: true,
+        position: "bottom-right"
+      });
+    } catch (error) {
+      console.error('API 保存配置失败:', error);
+      saveConfigToStorage(nextConfig);
+      toast.success('已保存到本地缓存', {
+        autoClose: 2000,
+        hideProgressBar: true,
+        position: "bottom-right"
+      });
+    }
+  };
 
   const handleEditService = (categoryName, updatedService, serviceIndex) => {
     setConfig(prevConfig => {
@@ -61,12 +79,7 @@ function App() {
 
         // 编辑后自动保存配置
         setTimeout(() => {
-          saveConfigToStorage(newConfig);
-          toast.success('配置已自动保存', {
-            autoClose: 2000,
-            hideProgressBar: true,
-            position: "bottom-right"
-          });
+          persistConfig(newConfig, '配置已自动保存');
         }, 0);
       }
 
@@ -85,12 +98,7 @@ function App() {
 
         // 添加后自动保存配置
         setTimeout(() => {
-          saveConfigToStorage(newConfig);
-          toast.success(`服务 "${newService.name}" 已添加`, {
-            autoClose: 2000,
-            hideProgressBar: true,
-            position: "bottom-right"
-          });
+          persistConfig(newConfig, `服务 "${newService.name}" 已添加`);
         }, 0);
       }
 
@@ -110,12 +118,7 @@ function App() {
 
         // 删除后自动保存配置
         setTimeout(() => {
-          saveConfigToStorage(newConfig);
-          toast.success(`服务 "${deletedService.name}" 已删除`, {
-            autoClose: 2000,
-            hideProgressBar: true,
-            position: "bottom-right"
-          });
+          persistConfig(newConfig, `服务 "${deletedService.name}" 已删除`);
         }, 0);
       }
 
@@ -130,12 +133,7 @@ function App() {
 
       // 添加分类后自动保存配置
       setTimeout(() => {
-        saveConfigToStorage(newConfig);
-        toast.success(`分类 "${newCategory.name}" 已添加`, {
-          autoClose: 2000,
-          hideProgressBar: true,
-          position: "bottom-right"
-        });
+        persistConfig(newConfig, `分类 "${newCategory.name}" 已添加`);
       }, 0);
 
       return newConfig;
@@ -153,12 +151,7 @@ function App() {
 
         // 删除后自动保存配置
         setTimeout(() => {
-          saveConfigToStorage(newConfig);
-          toast.success(`分类 "${categoryName}" 已删除`, {
-            autoClose: 2000,
-            hideProgressBar: true,
-            position: "bottom-right"
-          });
+          persistConfig(newConfig, `分类 "${categoryName}" 已删除`);
         }, 0);
       }
 
@@ -181,12 +174,7 @@ function App() {
 
       // 编辑后自动保存配置
       setTimeout(() => {
-        saveConfigToStorage(newConfig);
-        toast.success('分类已更新', {
-          autoClose: 2000,
-          hideProgressBar: true,
-          position: "bottom-right"
-        });
+        persistConfig(newConfig, '分类已更新');
       }, 0);
 
       return newConfig;
@@ -200,12 +188,7 @@ function App() {
 
       // 重排序后自动保存配置
       setTimeout(() => {
-        saveConfigToStorage(newConfig);
-        toast.success('分类顺序已更新', {
-          autoClose: 2000,
-          hideProgressBar: true,
-          position: "bottom-right"
-        });
+        persistConfig(newConfig, '分类顺序已更新');
       }, 0);
 
       return newConfig;
@@ -222,12 +205,7 @@ function App() {
 
         // 重排序后自动保存配置
         setTimeout(() => {
-          saveConfigToStorage(newConfig);
-          toast.success('服务顺序已更新', {
-            autoClose: 2000,
-            hideProgressBar: true,
-            position: "bottom-right"
-          });
+          persistConfig(newConfig, '服务顺序已更新');
         }, 0);
       }
 
@@ -273,9 +251,8 @@ function App() {
       if (importedConfig) {
         setConfig(importedConfig);
         document.title = importedConfig.title || "HomeLab Dashboard";
-        // 导入后自动保存到本地存储
-        saveConfigToStorage(importedConfig);
-        toast.success('配置已导入并保存');
+        // 导入后自动保存配置
+        await persistConfig(importedConfig, '配置已导入并保存');
       }
     } catch (error) {
       toast.error(`导入失败: ${error.message}`);
