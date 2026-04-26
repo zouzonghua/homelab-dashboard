@@ -2,9 +2,8 @@ import ServiceItem from './ServiceItem'
 import { getServiceStatus } from '../api'
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faTrash, faFolder, faEdit } from "@fortawesome/free-solid-svg-icons";
-import AsyncSolidIcon from './AsyncSolidIcon'
-import { getSolidIconNameFromClass } from '../utils/fontawesomeIcons'
+import { faPlus, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { getCategoryIcon } from '../icons/categoryIcons'
 
 import {
   DndContext,
@@ -106,20 +105,6 @@ const ServiceCategory = ({
     })
   )
 
-  // 根据图标字符串获取图标对象
-  const getIcon = (iconString?: string) => {
-    if (!iconString) {
-      return <FontAwesomeIcon icon={faFolder} />;
-    }
-
-    return (
-      <AsyncSolidIcon
-        iconName={getSolidIconNameFromClass(iconString)}
-        fallbackIcon={faFolder}
-      />
-    );
-  };
-
   const handleDeleteService = (index: number) => {
     if (onDeleteService && window.confirm(`确定要删除服务 "${category.list[index].name}" 吗？`)) {
       onDeleteService(index);
@@ -158,7 +143,7 @@ const ServiceCategory = ({
             }`}
             title={isEditMode ? '拖拽排序' : ''}
           >
-            {getIcon(category.icon)}
+            <FontAwesomeIcon icon={getCategoryIcon(category.icon)} />
           </span>
           {category.name}
         </span>

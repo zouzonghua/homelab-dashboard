@@ -1,88 +1,37 @@
-import { useState, useRef, useEffect } from 'react';
-import { useTheme, type Theme } from '../contexts/ThemeContext';
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSun, faMoon, faDesktop, faChevronDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faDesktop, faMoon, faSun } from '@fortawesome/free-solid-svg-icons'
+import { useTheme, type Theme } from '../contexts/ThemeContext'
+
+const themeCycle: Theme[] = ['system', 'light', 'dark']
+
+const themeMeta: Record<Theme, { label: string; nextLabel: string; icon: typeof faDesktop }> = {
+  light: { label: '浅色', nextLabel: '深色', icon: faSun },
+  dark: { label: '深色', nextLabel: '跟随系统', icon: faMoon },
+  system: { label: '跟随系统', nextLabel: '浅色', icon: faDesktop },
+}
+
+const getNextTheme = (theme: Theme) => {
+  const index = themeCycle.indexOf(theme)
+  return themeCycle[(index + 1) % themeCycle.length]
+}
 
 const ThemeToggle = () => {
-  const { theme, setTheme } = useTheme();
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // 获取当前主题的图标
-  const getCurrentIcon = () => {
-    switch(theme) {
-      case 'light': return <FontAwesomeIcon icon={faSun} />;
-      case 'dark': return <FontAwesomeIcon icon={faMoon} />;
-      case 'system': return <FontAwesomeIcon icon={faDesktop} />;
-      default: return <FontAwesomeIcon icon={faDesktop} />;
-    }
-  };
-
-  // 切换下拉菜单的打开/关闭状态
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
-
-  // 选择主题
-  const selectTheme = (newTheme: Theme) => {
-    setTheme(newTheme);
-    setIsOpen(false);
-  };
-
-  // 点击其他地方关闭下拉菜单
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && event.target instanceof Node && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
+  const { theme, setTheme } = useTheme()
+  const current = themeMeta[theme]
+  const next = themeMeta[getNextTheme(theme)]
 
   return (
-    <div className="relative" ref={dropdownRef}>
-      <button 
-        className="theme-toggle-button chassis-icon-button"
-        onClick={toggleDropdown}
-        aria-label="toggle theme"
-        aria-expanded={isOpen}
-        title="切换主题"
-      >
-        <span className="theme-toggle-button__icon">{getCurrentIcon()}</span>
-        <FontAwesomeIcon icon={faChevronDown} className="theme-toggle-button__chevron" />
-      </button>
+    <button
+      className="theme-toggle-button chassis-icon-button"
+      onClick={() => setTheme(getNextTheme(theme))}
+      aria-label={`当前主题：${current.label}，点击切换到${next.label}`}
+      title={`当前：${current.label}，点击切换到${next.label}`}
+    >
+      <span className="theme-toggle-button__icon">
+        <FontAwesomeIcon icon={current.icon} />
+      </span>
+    </button>
+  )
+}
 
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-dark-700 rounded-lg shadow-lg z-50 py-1 text-sm">
-          <button
-            className="flex items-center w-full px-4 py-2 text-left  hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={() => selectTheme('light')}
-          >
-            <FontAwesomeIcon icon={faSun} className="mr-2 w-4 h-4" />
-            Light
-          </button>
-          <button
-            className="flex items-center w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={() => selectTheme('dark')}
-          >
-            <FontAwesomeIcon icon={faMoon} className="mr-2 w-4 h-4" />
-            Dark
-          </button>
-          <button
-            className="flex items-center w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
-            onClick={() => selectTheme('system')}
-          >
-            <FontAwesomeIcon icon={faDesktop} className="mr-2 w-4 h-4" />
-            System
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default ThemeToggle; 
+export default ThemeToggle

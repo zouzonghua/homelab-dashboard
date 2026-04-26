@@ -208,10 +208,10 @@ html, body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  min-width: 2.85rem;
+  width: 2.45rem;
+  min-width: 2.45rem;
   height: 2.45rem;
-  padding: 0 0.7rem;
+  padding: 0;
 }
 
 .theme-toggle-button__icon {
@@ -222,12 +222,6 @@ html, body {
   height: 1rem;
   font-size: 1rem;
   line-height: 1;
-}
-
-.theme-toggle-button__chevron {
-  width: 0.6rem;
-  height: 0.6rem;
-  opacity: 0.72;
 }
 
 .chassis-edit-bar {
