@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install web dependencies
+        run: npm ci --prefix web
+
+      - name: Validate OpenAPI contract
+        run: ruby -e "require 'yaml'; YAML.load_file('api/openapi.yaml')"
+
+      - name: Check generated API types
+        run: npm --prefix web run api:types:check
+
+      - name: Run Go tests
+        run: go test ./api ./cmd/... ./internal/...
+
+      - name: Run web unit tests
+        run: npm --prefix web test
+
+      - name: Run web type check
+        run: npm --prefix web run typecheck
+
+      - name: Build web
+        run: npm --prefix web run build
+
+      - name: Build Docker image
+        run: docker build -t homelab-dashboard:ci .

@@ -1,0 +1,776 @@
+openapi: 3.1.0
+info:
+  title: Homelab Dashboard API
+  version: 1.0.0
+  description: OpenAPI-first contract for the Homelab Dashboard resource API.
+servers:
+  - url: http://localhost:8080
+    description: Local Go API
+tags:
+  - name: Dashboard
+  - name: Config
+  - name: Categories
+  - name: Services
+  - name: Status
+  - name: Audit Logs
+paths:
+  /api/v1/dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Get dashboard settings
+      operationId: getDashboard
+      responses:
+        "200":
+          description: Dashboard settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSettings"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/export:
+    get:
+      tags: [Config]
+      summary: Export current dashboard config
+      operationId: exportConfig
+      responses:
+        "200":
+          description: Current dashboard config in legacy-compatible import/export shape
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportConfigResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/import:
+    put:
+      tags: [Config]
+      summary: Replace dashboard config
+      operationId: importConfig
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportConfigRequest"
+      responses:
+        "200":
+          description: Imported dashboard config
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExportConfigResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/categories:
+    get:
+      tags: [Categories]
+      summary: List categories
+      operationId: listCategories
+      parameters:
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
+      responses:
+        "200":
+          description: Categories sorted by display order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryListResponse"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Categories]
+      summary: Create category
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryCreateRequest"
+      responses:
+        "201":
+          description: Created category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/categories/{categoryId}:
+    parameters:
+      - $ref: "#/components/parameters/CategoryId"
+    patch:
+      tags: [Categories]
+      summary: Update category fields
+      operationId: updateCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoryUpdateRequest"
+      responses:
+        "200":
+          description: Updated category
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags: [Categories]
+      summary: Delete category
+      operationId: deleteCategory
+      responses:
+        "204":
+          description: Category deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/services:
+    get:
+      tags: [Services]
+      summary: List services
+      operationId: listServices
+      parameters:
+        - $ref: "#/components/parameters/CategoryIdQuery"
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
+      responses:
+        "200":
+          description: Services sorted by category and display order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Services]
+      summary: Create service
+      operationId: createService
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceCreateRequest"
+      responses:
+        "201":
+          description: Created service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/services/{serviceId}:
+    parameters:
+      - $ref: "#/components/parameters/ServiceId"
+    patch:
+      tags: [Services]
+      summary: Update service fields
+      operationId: updateService
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdateRequest"
+      responses:
+        "200":
+          description: Updated service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags: [Services]
+      summary: Delete service
+      operationId: deleteService
+      responses:
+        "204":
+          description: Service deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/status:
+    get:
+      tags: [Status]
+      summary: Get service status snapshot
+      operationId: getStatus
+      responses:
+        "200":
+          description: Current service status keyed by service id
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: "#/components/schemas/ServiceStatus"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/audit-logs:
+    get:
+      tags: [Audit Logs]
+      summary: List audit logs
+      operationId: listAuditLogs
+      parameters:
+        - name: action
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by action, for example service.update.
+        - name: resourceType
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by resource type.
+        - name: resourceId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by resource identifier.
+        - $ref: "#/components/parameters/LimitParam"
+        - $ref: "#/components/parameters/OffsetParam"
+      responses:
+        "200":
+          description: Audit logs sorted by newest first. Defaults to limit 50 and offset 0.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditLogListResponse"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/status/stream:
+    get:
+      tags: [Status]
+      summary: Stream service status snapshots
+      operationId: streamStatus
+      responses:
+        "200":
+          description: Server-sent events named status. Each data payload is a status map keyed by service id.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                examples:
+                  - "event: status\ndata: {\"svc_1\":{\"name\":\"Jellyfin\",\"status\":\"up\"}}\n\n"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v1/services/{serviceId}/icon:
+    get:
+      tags: [Services]
+      summary: Get service icon
+      operationId: getServiceIcon
+      parameters:
+        - $ref: "#/components/parameters/ServiceId"
+      responses:
+        "200":
+          description: Icon image or generated fallback SVG
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+          content:
+            image/svg+xml:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/x-icon:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+components:
+  parameters:
+    CategoryId:
+      name: categoryId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      description: Category identifier.
+    CategoryIdQuery:
+      name: categoryId
+      in: query
+      required: false
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      description: Optional category filter.
+    LimitParam:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+      description: Maximum number of records to return. Defaults to 100 for categories/services and 50 for audit logs.
+    OffsetParam:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Number of records to skip before returning the page.
+    ServiceId:
+      name: serviceId
+      in: path
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+      description: Service identifier.
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    BadRequest:
+      description: Malformed JSON or invalid request/query syntax
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    ValidationError:
+      description: Request field validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    MethodNotAllowed:
+      description: HTTP method is not allowed for this resource
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+    InternalServerError:
+      description: Unexpected server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ApiError"
+  schemas:
+    ImportConfigRequest:
+      type: object
+      required: [title, columns, items]
+      properties:
+        date:
+          type: string
+          description: Optional seed/export date string.
+        title:
+          type: string
+          minLength: 1
+        columns:
+          type: string
+          description: Display column count kept as string for legacy config compatibility.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigCategory"
+    ExportConfigResponse:
+      type: object
+      required: [title, columns, items]
+      properties:
+        date:
+          type: string
+          description: Optional seed/export date string.
+        title:
+          type: string
+          minLength: 1
+        columns:
+          type: string
+          description: Display column count kept as string for legacy config compatibility.
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigCategory"
+    Pagination:
+      type: object
+      required: [limit, offset, total, hasMore]
+      properties:
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 200
+        offset:
+          type: integer
+          minimum: 0
+        total:
+          type: integer
+          minimum: 0
+        hasMore:
+          type: boolean
+    CategoryListResponse:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    ServiceListResponse:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    AuditLogListResponse:
+      type: object
+      required: [data, pagination]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditLog"
+        pagination:
+          $ref: "#/components/schemas/Pagination"
+    ConfigCategory:
+      type: object
+      required: [name, icon, list]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        icon:
+          type: string
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConfigService"
+    ConfigService:
+      type: object
+      required: [name, logo, url, target]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        logo:
+          type: string
+        url:
+          type: string
+          format: uri
+        target:
+          type: string
+          enum: [_blank, _self]
+        monitorUrl:
+          type: string
+          format: uri
+        monitorEnabled:
+          type: boolean
+          default: false
+    DashboardSettings:
+      type: object
+      required: [title, columns]
+      properties:
+        date:
+          type: string
+          description: Optional seed/export date string.
+        title:
+          type: string
+          minLength: 1
+        columns:
+          type: integer
+          minimum: 1
+          maximum: 6
+    Category:
+      type: object
+      required: [id, name, icon, order]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Stable category id used by v1 resource endpoints.
+        name:
+          type: string
+          minLength: 1
+        icon:
+          type: string
+          description: Font Awesome class string, for example fa-solid fa-folder.
+        order:
+          type: integer
+          minimum: 0
+        services:
+          type: array
+          items:
+            $ref: "#/components/schemas/Service"
+    Service:
+      type: object
+      required: [id, categoryId, name, url, target, monitorEnabled, order]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Stable service id used by v1 resource endpoints.
+        categoryId:
+          type: integer
+          format: int64
+          description: Parent category id used by v1 resource endpoints.
+        name:
+          type: string
+          minLength: 1
+        logo:
+          type: string
+          description: Local asset path, remote image URL, or empty for automatic favicon discovery.
+        url:
+          type: string
+          format: uri
+        target:
+          type: string
+          enum: [_blank, _self]
+        monitorUrl:
+          type: string
+          format: uri
+          description: Optional URL used for health checks. Defaults to url when omitted.
+        monitorEnabled:
+          type: boolean
+          default: false
+        order:
+          type: integer
+          minimum: 0
+    ServiceStatus:
+      type: object
+      required: [name, status, code, responseTimeMs, checkedAt]
+      properties:
+        name:
+          type: string
+        status:
+          type: string
+          enum: [up, down]
+        method:
+          type: string
+          enum: [HEAD, GET]
+        code:
+          type: integer
+          minimum: 0
+        responseTimeMs:
+          type: integer
+          minimum: 0
+        checkedAt:
+          type: string
+          format: date-time
+        error:
+          type: string
+    AuditLog:
+      type: object
+      required: [id, actorType, action, resourceType, summary, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        actorType:
+          type: string
+          default: local
+        actorId:
+          type: string
+        actorName:
+          type: string
+        action:
+          type: string
+          examples: [service.update]
+        resourceType:
+          type: string
+          examples: [service]
+        resourceId:
+          type: string
+        summary:
+          type: string
+        before:
+          type: object
+          additionalProperties: true
+          description: JSON snapshot before the successful operation.
+        after:
+          type: object
+          additionalProperties: true
+          description: JSON snapshot after the successful operation.
+        metadata:
+          type: object
+          additionalProperties: true
+        requestId:
+          type: string
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+    ApiError:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/ValidationErrorField"
+    ValidationErrorField:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    CategoryCreateRequest:
+      type: object
+      required: [name, icon]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        icon:
+          type: string
+          default: fa-solid fa-folder
+    CategoryUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 1
+        icon:
+          type: string
+        order:
+          type: integer
+          minimum: 0
+    ServiceCreateRequest:
+      type: object
+      required: [categoryId, name, url, target]
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+          minLength: 1
+        logo:
+          type: string
+          default: ""
+        url:
+          type: string
+          format: uri
+        target:
+          type: string
+          enum: [_blank, _self]
+          default: _blank
+        monitorUrl:
+          type: string
+          format: uri
+        monitorEnabled:
+          type: boolean
+          default: false
+    ServiceUpdateRequest:
+      type: object
+      minProperties: 1
+      properties:
+        categoryId:
+          type: integer
+          format: int64
+          minimum: 1
+        order:
+          type: integer
+          minimum: 0
+        name:
+          type: string
+          minLength: 1
+        logo:
+          type: string
+        url:
+          type: string
+          format: uri
+        target:
+          type: string
+          enum: [_blank, _self]
+        monitorUrl:
+          type: string
+          format: uri
+        monitorEnabled:
+          type: boolean

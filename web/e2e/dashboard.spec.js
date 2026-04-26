@@ -14,11 +14,11 @@ test('loads dashboard and persists a new service after reload', async ({ page })
   await page.getByLabel('名称').fill('E2E Service')
   await page.getByLabel('URL').fill('https://example.com/e2e')
   await page.getByLabel('启用状态检测').check()
-  await page.getByLabel('检测 URL').fill('http://127.0.0.1:4174/api/config')
+  await page.getByLabel('检测 URL').fill('http://127.0.0.1:4174/api/v1/dashboard')
   await Promise.all([
     page.waitForResponse((response) =>
-      response.url().endsWith('/api/config') &&
-      response.request().method() === 'PUT' &&
+      response.url().endsWith('/api/v1/services') &&
+      response.request().method() === 'POST' &&
       response.ok()
     ),
     page.getByRole('button', { name: '添加', exact: true }).click(),

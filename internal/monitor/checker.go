@@ -43,14 +43,14 @@ func (c *Checker) Check(ctx context.Context, name string, targetURL string) Resu
 	if err == nil && !shouldFallbackToGet(code) {
 		result.Method = http.MethodHead
 		result.Code = code
-		result.ResponseTimeMs = time.Since(startedAt).Milliseconds()
+		result.ResponseTimeMs = elapsedMilliseconds(startedAt)
 		result.Status = statusFromCode(code)
 		return result
 	}
 
 	code, err = c.request(ctx, http.MethodGet, targetURL)
 	result.Method = http.MethodGet
-	result.ResponseTimeMs = time.Since(startedAt).Milliseconds()
+	result.ResponseTimeMs = elapsedMilliseconds(startedAt)
 	if err != nil {
 		result.Error = err.Error()
 		return result
@@ -58,6 +58,14 @@ func (c *Checker) Check(ctx context.Context, name string, targetURL string) Resu
 	result.Code = code
 	result.Status = statusFromCode(code)
 	return result
+}
+
+func elapsedMilliseconds(startedAt time.Time) int64 {
+	elapsed := time.Since(startedAt).Milliseconds()
+	if elapsed <= 0 {
+		return 1
+	}
+	return elapsed
 }
 
 func (c *Checker) request(ctx context.Context, method string, targetURL string) (int, error) {

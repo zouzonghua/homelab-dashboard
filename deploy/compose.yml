@@ -1,5 +1,6 @@
 services:
   homelab-dashboard:
+    image: zouzonghua/homelab-dashboard:latest
     build:
       context: ..
       dockerfile: Dockerfile

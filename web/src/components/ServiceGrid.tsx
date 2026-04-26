@@ -1,0 +1,167 @@
+import ServiceCategory from './ServiceCategory'
+import {
+  DndContext,
+  closestCenter,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  rectSortingStrategy,
+} from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import type { BivariantCallback, CategoryWithServices, ServiceStatusMap, ServiceViewModel } from '../types'
+
+type SortableCategoryItemProps = {
+  category: CategoryWithServices
+  index: number
+  columnClass: string
+  onOpenEditService?: BivariantCallback<[string, ServiceViewModel, number]>
+  onOpenAddService?: BivariantCallback<[string]>
+  onDeleteService?: BivariantCallback<[string, number]>
+  onDeleteCategory?: BivariantCallback<[string]>
+  onOpenEditCategory?: BivariantCallback<[CategoryWithServices, number]>
+  onReorderServices?: BivariantCallback<[string, ServiceViewModel[]]>
+  isEditMode?: boolean
+  serviceStatus?: ServiceStatusMap
+}
+
+type ServiceGridProps = {
+  categories: CategoryWithServices[]
+  columns?: string | number
+  onOpenEditService?: BivariantCallback<[string, ServiceViewModel, number]>
+  onOpenAddService?: BivariantCallback<[string]>
+  onDeleteService?: BivariantCallback<[string, number]>
+  onDeleteCategory?: BivariantCallback<[string]>
+  onOpenEditCategory?: BivariantCallback<[CategoryWithServices, number]>
+  onReorderCategories?: BivariantCallback<[CategoryWithServices[]]>
+  onReorderServices?: BivariantCallback<[string, ServiceViewModel[]]>
+  isEditMode?: boolean
+  serviceStatus?: ServiceStatusMap
+}
+
+// 可排序的分类项组件
+const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }: SortableCategoryItemProps) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.name, disabled: !isEditMode })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: transition || 'transform 200ms ease',
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 1000 : 'auto',
+    cursor: isDragging ? 'grabbing' : 'default',
+  }
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`flex flex-col ${columnClass}`}
+    >
+      <ServiceCategory
+        category={category}
+        onOpenEditService={(service, serviceIndex) =>
+          onOpenEditService?.(category.name, service, serviceIndex)
+        }
+        onOpenAddService={() => onOpenAddService?.(category.name)}
+        onDeleteService={(serviceIndex) =>
+          onDeleteService?.(category.name, serviceIndex)
+        }
+        onDeleteCategory={() => onDeleteCategory?.(category.name)}
+        onEditCategory={() => onOpenEditCategory?.(category, index)}
+        onReorderServices={(newServices) => onReorderServices?.(category.name, newServices)}
+        isEditMode={isEditMode}
+        dragHandleProps={isEditMode ? { ...attributes, ...listeners } : {}}
+        serviceStatus={serviceStatus}
+      />
+    </li>
+  )
+}
+
+const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderCategories, onReorderServices, isEditMode, serviceStatus }: ServiceGridProps) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 拖拽激活距离，避免误触
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  // 计算每个卡片的宽度类名
+  const getColumnClass = () => {
+    switch (parseInt(String(columns))) {
+      case 1: return 'w-full'
+      case 2: return 'w-full md:w-1/2'
+      case 3: return 'w-full md:w-1/3'
+      case 4: return 'w-full md:w-1/4'
+      case 5: return 'w-full md:w-1/5'
+      case 6: return 'w-full md:w-1/6'
+      default: return 'w-full md:w-1/4'
+    }
+  }
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+
+    if (over && active.id !== over.id) {
+      const oldIndex = categories.findIndex((cat) => cat.name === active.id)
+      const newIndex = categories.findIndex((cat) => cat.name === over.id)
+
+      const newCategories = arrayMove(categories, oldIndex, newIndex)
+      onReorderCategories?.(newCategories)
+    }
+  }
+
+  return (
+    <div className="chassis-rack container max-w-screen-xl p-2 xl:p-0 xl:mt-4">
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={categories.map((cat) => cat.name)}
+          strategy={rectSortingStrategy}
+        >
+          <ul className="flex flex-wrap p-2">
+            {categories.map((category, index) => (
+              <SortableCategoryItem
+                key={category.name}
+                category={category}
+                index={index}
+                columnClass={getColumnClass()}
+                onOpenEditService={onOpenEditService}
+                onOpenAddService={onOpenAddService}
+                onDeleteService={onDeleteService}
+                onDeleteCategory={onDeleteCategory}
+                onOpenEditCategory={onOpenEditCategory}
+                onReorderServices={onReorderServices}
+                isEditMode={isEditMode}
+                serviceStatus={serviceStatus}
+              />
+            ))}
+          </ul>
+        </SortableContext>
+      </DndContext>
+    </div>
+  )
+}
+
+export default ServiceGrid 
