@@ -8,20 +8,25 @@ const ServiceEditForm = ({ service, onSave, onCancel, onDelete }) => {
     name: service.name,
     logo: service.logo,
     url: service.url,
-    target: service.target || '_blank'
+    target: service.target || '_blank',
+    monitorEnabled: service.monitorEnabled || false,
+    monitorUrl: service.monitorUrl || ''
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { checked, name, type, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    onSave({
+      ...formData,
+      monitorUrl: formData.monitorEnabled ? formData.monitorUrl : ''
+    });
   };
 
   return (
@@ -48,7 +53,7 @@ const ServiceEditForm = ({ service, onSave, onCancel, onDelete }) => {
           value={formData.logo}
           onChange={handleChange}
           className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
-          required
+          placeholder="留空则自动获取 favicon"
         />
       </div>
       
@@ -78,6 +83,34 @@ const ServiceEditForm = ({ service, onSave, onCancel, onDelete }) => {
           <option value="_self">当前窗口 (_self)</option>
         </select>
       </div>
+
+      <div className="mb-3">
+        <label className="flex items-center space-x-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            name="monitorEnabled"
+            checked={formData.monitorEnabled}
+            onChange={handleChange}
+            className="rounded border-gray-300"
+          />
+          <span>启用状态检测</span>
+        </label>
+      </div>
+
+      {formData.monitorEnabled && (
+        <div className="mb-4">
+          <label htmlFor="monitorUrl" className="block text-sm font-medium mb-1">检测 URL</label>
+          <input
+            type="url"
+            id="monitorUrl"
+            name="monitorUrl"
+            value={formData.monitorUrl}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
+            placeholder="留空则使用服务 URL"
+          />
+        </div>
+      )}
       
       <div className="flex justify-between items-center">
         {/* 删除按钮 - 左侧 */}
@@ -123,9 +156,11 @@ const ServiceEditForm = ({ service, onSave, onCancel, onDelete }) => {
 ServiceEditForm.propTypes = {
   service: PropTypes.shape({
     name: PropTypes.string.isRequired,
-    logo: PropTypes.string.isRequired,
+    logo: PropTypes.string,
     url: PropTypes.string.isRequired,
-    target: PropTypes.string
+    target: PropTypes.string,
+    monitorEnabled: PropTypes.bool,
+    monitorUrl: PropTypes.string
   }).isRequired,
   onSave: PropTypes.func.isRequired,
   onCancel: PropTypes.func.isRequired,

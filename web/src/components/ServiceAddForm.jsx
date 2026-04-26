@@ -8,26 +8,33 @@ const ServiceAddForm = ({ onAdd, onCancel }) => {
     name: '',
     logo: '',
     url: '',
-    target: '_blank'
+    target: '_blank',
+    monitorEnabled: false,
+    monitorUrl: ''
   });
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { checked, name, type, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onAdd(formData);
+    onAdd({
+      ...formData,
+      monitorUrl: formData.monitorEnabled ? formData.monitorUrl : ''
+    });
     // 重置表单
     setFormData({
       name: '',
       logo: '',
       url: '',
-      target: '_blank'
+      target: '_blank',
+      monitorEnabled: false,
+      monitorUrl: ''
     });
   };
 
@@ -57,11 +64,10 @@ const ServiceAddForm = ({ onAdd, onCancel }) => {
           value={formData.logo}
           onChange={handleChange}
           className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
-          placeholder="assets/icons/logo.png 或 https://..."
-          required
+          placeholder="留空则自动获取 favicon"
         />
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          本地图标：assets/icons/文件名.png 或 远程URL
+          本地图标、远程 URL，或留空自动获取 favicon
         </p>
       </div>
 
@@ -92,6 +98,34 @@ const ServiceAddForm = ({ onAdd, onCancel }) => {
           <option value="_self">当前窗口 (_self)</option>
         </select>
       </div>
+
+      <div className="mb-3">
+        <label className="flex items-center space-x-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            name="monitorEnabled"
+            checked={formData.monitorEnabled}
+            onChange={handleChange}
+            className="rounded border-gray-300"
+          />
+          <span>启用状态检测</span>
+        </label>
+      </div>
+
+      {formData.monitorEnabled && (
+        <div className="mb-4">
+          <label htmlFor="add-monitor-url" className="block text-sm font-medium mb-1">检测 URL</label>
+          <input
+            type="url"
+            id="add-monitor-url"
+            name="monitorUrl"
+            value={formData.monitorUrl}
+            onChange={handleChange}
+            className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
+            placeholder="留空则使用服务 URL"
+          />
+        </div>
+      )}
 
       <div className="flex justify-end space-x-2">
         <button

@@ -18,16 +18,6 @@ const ThemeToggle = () => {
     }
   };
 
-  // 获取当前主题的中文名
-  const getCurrentName = () => {
-    switch(theme) {
-      case 'light': return 'Light';
-      case 'dark': return 'Dark';
-      case 'system': return 'System';
-      default: return 'System';
-    }
-  };
-
   // 切换下拉菜单的打开/关闭状态
   const toggleDropdown = () => {
     setIsOpen(!isOpen);
@@ -56,14 +46,14 @@ const ThemeToggle = () => {
   return (
     <div className="relative" ref={dropdownRef}>
       <button 
-        className="flex items-center justify-center space-x-1 p-2 rounded-lg bg-gray-100 dark:bg-dark-700 text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-dark-600 transition-colors"
+        className="theme-toggle-button chassis-icon-button"
         onClick={toggleDropdown}
         aria-label="toggle theme"
         aria-expanded={isOpen}
+        title="切换主题"
       >
-        <span className="mr-2">{getCurrentIcon()}</span>
-        <span className="hidden md:inline">{getCurrentName()}</span>
-        <FontAwesomeIcon icon={faChevronDown} className="text-xs" />
+        <span className="theme-toggle-button__icon">{getCurrentIcon()}</span>
+        <FontAwesomeIcon icon={faChevronDown} className="theme-toggle-button__chevron" />
       </button>
 
       {isOpen && (

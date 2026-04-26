@@ -68,8 +68,15 @@ HOMELAB_DB_PATH=.tmp/homelab.db HOMELAB_STATIC_DIR=web/dist PORT=8080 go run ./c
 本地开发不需要 Docker。常规调试方式是两个终端：
 
 ```bash
+# 推荐：一个命令同时启动 Go API 和 Vite 前端
+make dev
+```
+
+也可以拆成两个终端：
+
+```bash
 # 终端 1：Go API，监听 8080
-npm --prefix web run dev:api
+go run ./cmd/server
 
 # 终端 2：Vite 前端，监听 5173，并把 /api 代理到 8080
 npm --prefix web run dev

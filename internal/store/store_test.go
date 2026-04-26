@@ -65,7 +65,7 @@ func TestReplaceConfigPersistsOrderAndValues(t *testing.T) {
 				Name: "First",
 				Icon: "first-icon",
 				List: []config.Service{
-					{Name: "B", Logo: "b.png", URL: "https://b.example", Target: "_self"},
+					{Name: "B", Logo: "b.png", URL: "https://b.example", Target: "_self", MonitorEnabled: true, MonitorURL: "https://health.example"},
 					{Name: "A", Logo: "a.png", URL: "https://a.example", Target: "_blank"},
 				},
 			},

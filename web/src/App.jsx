@@ -5,7 +5,7 @@ import CategoryAddForm from './components/CategoryAddForm'
 import CategoryEditForm from './components/CategoryEditForm'
 import ServiceAddForm from './components/ServiceAddForm'
 import ServiceEditForm from './components/ServiceEditForm'
-import { fetchConfig, saveConfig } from './utils/api'
+import { fetchConfig, fetchStatus, saveConfig, subscribeStatus } from './utils/api'
 import {
   saveConfigToStorage,
   loadConfigFromStorage,
@@ -24,6 +24,7 @@ function App() {
   const [editingService, setEditingService] = useState(null) // { service, categoryName, serviceIndex }
   const [addingService, setAddingService] = useState(null) // { categoryName }
   const [editingCategory, setEditingCategory] = useState(null) // { category, categoryIndex }
+  const [serviceStatus, setServiceStatus] = useState({})
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -49,10 +50,67 @@ function App() {
     loadConfig();
   }, []);
 
+  useEffect(() => {
+    if (!config) return;
+
+    const loadStatus = async () => {
+      try {
+        const status = await fetchStatus();
+        if (import.meta.env.VITE_DEBUG_STATUS === '1') {
+          console.debug('[status] loaded', status);
+        }
+        setServiceStatus(status);
+      } catch (err) {
+        console.warn('加载服务状态失败:', err);
+      }
+    };
+
+    loadStatus();
+    let intervalId = null;
+    let unsubscribe = null;
+    const startPolling = () => {
+      if (intervalId) return;
+      intervalId = window.setInterval(loadStatus, 30000);
+    };
+
+    unsubscribe = subscribeStatus(
+      (status) => {
+        if (import.meta.env.VITE_DEBUG_STATUS === '1') {
+          console.debug('[status] stream event', status);
+        }
+        setServiceStatus(status);
+      },
+      (error) => {
+        console.warn('服务状态实时流失败，回退到轮询:', error);
+        unsubscribe?.();
+        unsubscribe = null;
+        startPolling();
+      }
+    );
+    if (!unsubscribe) {
+      startPolling();
+    }
+
+    return () => {
+      unsubscribe?.();
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, [config]);
+
   const persistConfig = async (nextConfig, successMessage) => {
     try {
       await saveConfig(nextConfig);
       saveConfigToStorage(nextConfig);
+      fetchStatus()
+        .then((status) => {
+          if (import.meta.env.VITE_DEBUG_STATUS === '1') {
+            console.debug('[status] refreshed after save', status);
+          }
+          setServiceStatus(status);
+        })
+        .catch((error) => console.warn('刷新服务状态失败:', error));
       toast.success(successMessage, {
         autoClose: 2000,
         hideProgressBar: true,
@@ -319,19 +377,19 @@ function App() {
   // )
 
   if (loading) return (
-    <div className="flex items-center justify-center h-full dark:bg-dark-900">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    <div className="chassis-app flex items-center justify-center h-full">
+      <div className="chassis-loader"></div>
     </div>
   );
   
   if (error) return (
-    <div className="flex items-center justify-center h-full dark:bg-dark-900">
-      <div className="text-red-500 text-xl">{error}</div>
+    <div className="chassis-app flex items-center justify-center h-full">
+      <div className="chassis-error">{error}</div>
     </div>
   );
 
   return (
-    <div className="overflow-auto bg-gray-50 dark:text-white dark:bg-dark-900 h-full w-screen flex flex-col items-center xl:flex-col">
+    <div className="chassis-app overflow-auto h-full w-screen flex flex-col items-center xl:flex-col">
       <Header
         title={config?.title || "HomeLab Dashboard"}
         onExportConfig={handleExportConfig}
@@ -339,11 +397,13 @@ function App() {
         onAddCategory={handleOpenAddCategory}
         isEditMode={isEditMode}
         onToggleEditMode={handleToggleEditMode}
+        categories={config?.items || []}
+        serviceStatus={serviceStatus}
       />
 
       {/* 编辑模式提示条 - 参考 Home Assistant 样式 */}
       {isEditMode && (
-        <div className="w-full bg-blue-500 dark:bg-blue-600 text-white py-3 px-4 shadow-lg">
+        <div className="chassis-edit-bar w-full py-3 px-4">
           <div className="container max-w-screen-xl mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -354,7 +414,7 @@ function App() {
             </div>
             <button
               onClick={handleToggleEditMode}
-              className="px-4 py-1.5 bg-white text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-medium text-sm"
+              className="chassis-button px-4 py-1.5 transition-colors font-medium text-sm"
             >
               完成
             </button>
@@ -373,6 +433,7 @@ function App() {
         onReorderCategories={handleReorderCategories}
         onReorderServices={handleReorderServices}
         isEditMode={isEditMode}
+        serviceStatus={serviceStatus}
       />
 
       {/* 添加分类模态框 */}
@@ -382,7 +443,7 @@ function App() {
           onClick={() => setIsAddingCategory(false)}
         >
           <div
-            className="bg-white dark:bg-dark-800 rounded-lg shadow-2xl max-w-md w-full mx-4 p-6"
+            className="chassis-modal max-w-md w-full mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <CategoryAddForm
@@ -400,7 +461,7 @@ function App() {
           onClick={() => setEditingService(null)}
         >
           <div
-            className="bg-white dark:bg-dark-800 rounded-lg shadow-2xl max-w-md w-full mx-4 p-6"
+            className="chassis-modal max-w-md w-full mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">编辑服务</h3>
@@ -428,7 +489,7 @@ function App() {
           onClick={() => setAddingService(null)}
         >
           <div
-            className="bg-white dark:bg-dark-800 rounded-lg shadow-2xl max-w-md w-full mx-4 p-6"
+            className="chassis-modal max-w-md w-full mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">添加服务</h3>
@@ -447,7 +508,7 @@ function App() {
           onClick={() => setEditingCategory(null)}
         >
           <div
-            className="bg-white dark:bg-dark-800 rounded-lg shadow-2xl max-w-md w-full mx-4 p-6"
+            className="chassis-modal max-w-md w-full mx-4 p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <CategoryEditForm

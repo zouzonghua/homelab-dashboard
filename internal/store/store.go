@@ -124,13 +124,15 @@ func (s *Store) ReplaceConfig(ctx context.Context, cfg config.Config) error {
 		for j, service := range item.List {
 			_, err := tx.ExecContext(
 				ctx,
-				`INSERT INTO services (category_id, order_idx, name, logo, url, target) VALUES (?, ?, ?, ?, ?, ?)`,
+				`INSERT INTO services (category_id, order_idx, name, logo, url, target, monitor_url, monitor_enabled) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 				categoryID,
 				j,
 				service.Name,
 				service.Logo,
 				service.URL,
 				service.Target,
+				service.MonitorURL,
+				service.MonitorEnabled,
 			)
 			if err != nil {
 				return err
@@ -167,9 +169,14 @@ CREATE TABLE IF NOT EXISTS services (
 	logo TEXT NOT NULL,
 	url TEXT NOT NULL,
 	target TEXT NOT NULL,
+	monitor_url TEXT NOT NULL DEFAULT '',
+	monitor_enabled INTEGER NOT NULL DEFAULT 0,
 	FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
 );`)
-	return err
+	if err != nil {
+		return err
+	}
+	return s.ensureServiceColumns(ctx)
 }
 
 func (s *Store) isEmpty(ctx context.Context) (bool, error) {
@@ -183,7 +190,7 @@ func (s *Store) isEmpty(ctx context.Context) (bool, error) {
 func (s *Store) loadServices(ctx context.Context, categoryID int64) ([]config.Service, error) {
 	rows, err := s.db.QueryContext(
 		ctx,
-		`SELECT name, logo, url, target FROM services WHERE category_id = ? ORDER BY order_idx`,
+		`SELECT name, logo, url, target, monitor_url, monitor_enabled FROM services WHERE category_id = ? ORDER BY order_idx`,
 		categoryID,
 	)
 	if err != nil {
@@ -194,7 +201,7 @@ func (s *Store) loadServices(ctx context.Context, categoryID int64) ([]config.Se
 	var services []config.Service
 	for rows.Next() {
 		var service config.Service
-		if err := rows.Scan(&service.Name, &service.Logo, &service.URL, &service.Target); err != nil {
+		if err := rows.Scan(&service.Name, &service.Logo, &service.URL, &service.Target, &service.MonitorURL, &service.MonitorEnabled); err != nil {
 			return nil, err
 		}
 		services = append(services, service)
@@ -206,4 +213,49 @@ func (s *Store) loadServices(ctx context.Context, categoryID int64) ([]config.Se
 		return []config.Service{}, nil
 	}
 	return services, nil
+}
+
+func (s *Store) ensureServiceColumns(ctx context.Context) error {
+	columns, err := s.serviceColumns(ctx)
+	if err != nil {
+		return err
+	}
+	for _, migration := range []struct {
+		name string
+		sql  string
+	}{
+		{name: "monitor_url", sql: `ALTER TABLE services ADD COLUMN monitor_url TEXT NOT NULL DEFAULT ''`},
+		{name: "monitor_enabled", sql: `ALTER TABLE services ADD COLUMN monitor_enabled INTEGER NOT NULL DEFAULT 0`},
+	} {
+		if columns[migration.name] {
+			continue
+		}
+		if _, err := s.db.ExecContext(ctx, migration.sql); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Store) serviceColumns(ctx context.Context) (map[string]bool, error) {
+	rows, err := s.db.QueryContext(ctx, `PRAGMA table_info(services)`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	columns := map[string]bool{}
+	for rows.Next() {
+		var cid int
+		var name string
+		var typ string
+		var notNull int
+		var defaultValue sql.NullString
+		var pk int
+		if err := rows.Scan(&cid, &name, &typ, &notNull, &defaultValue, &pk); err != nil {
+			return nil, err
+		}
+		columns[name] = true
+	}
+	return columns, rows.Err()
 }

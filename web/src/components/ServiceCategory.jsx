@@ -23,7 +23,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 
 // 可排序的服务项组件
-const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode }) => {
+const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode, status }) => {
   const {
     attributes,
     listeners,
@@ -49,6 +49,7 @@ const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode 
         onDelete={onDelete}
         isEditMode={isEditMode}
         dragHandleProps={isEditMode ? { ...attributes, ...listeners } : {}}
+        status={status}
       />
     </li>
   )
@@ -59,10 +60,11 @@ SortableServiceItem.propTypes = {
   index: PropTypes.number.isRequired,
   onOpenEdit: PropTypes.func,
   onDelete: PropTypes.func,
-  isEditMode: PropTypes.bool
+  isEditMode: PropTypes.bool,
+  status: PropTypes.object
 }
 
-const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onEditCategory, onReorderServices, isEditMode, dragHandleProps }) => {
+const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onEditCategory, onReorderServices, isEditMode, dragHandleProps, serviceStatus }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -123,13 +125,13 @@ const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDele
   };
 
   return (
-    <div className={`flex flex-col w-full p-3`}>
-      <h2 className="group-title truncate text-2xl mt-6 mb-5 flex items-center justify-between">
-        <span className="flex items-center">
+    <div className={`rack-section flex flex-col w-full p-3`}>
+      <h2 className="rack-section__header group-title truncate text-2xl mt-6 mb-5 flex items-center justify-between">
+        <span className="rack-section__label flex items-center">
           {/* 分类图标 - 编辑模式下可拖拽 */}
           <span
             {...(isEditMode ? dragHandleProps : {})}
-            className={`fa-lg pr-1 ${
+            className={`rack-section__icon fa-lg pr-1 ${
               isEditMode
                 ? 'cursor-grab active:cursor-grabbing p-2 -ml-2 rounded-md transition-colors'
                 : ''
@@ -144,7 +146,7 @@ const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDele
         {isEditMode && onEditCategory && (
           <button
             onClick={onEditCategory}
-            className="p-2 rounded-full transition-colors text-lg"
+            className="chassis-icon-button p-2 transition-colors text-lg"
             aria-label={`编辑分类 ${category.name}`}
             title="编辑分类"
           >
@@ -170,6 +172,7 @@ const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDele
                 onOpenEdit={() => onOpenEditService(service, index)}
                 onDelete={() => handleDeleteService(index)}
                 isEditMode={isEditMode}
+                status={serviceStatus?.[service.name]}
               />
             ))}
             {/* 添加服务按钮 - 仅在编辑模式下显示 */}
@@ -177,7 +180,7 @@ const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDele
               <li>
                 <button
                   onClick={onOpenAddService}
-                  className="w-full shadow-lg text-gray-600 dark:text-gray-400 bg-white dark:bg-dark-700 rounded-lg flex items-center justify-center p-4 transition duration-500 ease-in-out transform hover:-translate-y-1 hover:scale-105 mb-6 cursor-pointer border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500"
+                  className="drive-bay drive-bay--add w-full flex items-center justify-center p-4 transition duration-300 ease-in-out mb-6 cursor-pointer"
                   aria-label={`添加服务到 ${category.name}`}
                 >
                   <FontAwesomeIcon icon={faPlus} className="mr-2 text-xl" />
@@ -205,7 +208,8 @@ ServiceCategory.propTypes = {
   onEditCategory: PropTypes.func,
   onReorderServices: PropTypes.func,
   isEditMode: PropTypes.bool,
-  dragHandleProps: PropTypes.object
+  dragHandleProps: PropTypes.object,
+  serviceStatus: PropTypes.object
 }
 
 export default ServiceCategory 

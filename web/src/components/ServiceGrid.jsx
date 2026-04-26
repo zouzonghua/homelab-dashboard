@@ -19,7 +19,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 
 // 可排序的分类项组件
-const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode }) => {
+const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }) => {
   const {
     attributes,
     listeners,
@@ -57,6 +57,7 @@ const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService,
         onReorderServices={(newServices) => onReorderServices(category.name, newServices)}
         isEditMode={isEditMode}
         dragHandleProps={isEditMode ? { ...attributes, ...listeners } : {}}
+        serviceStatus={serviceStatus}
       />
     </li>
   )
@@ -72,10 +73,11 @@ SortableCategoryItem.propTypes = {
   onDeleteCategory: PropTypes.func,
   onOpenEditCategory: PropTypes.func,
   onReorderServices: PropTypes.func,
-  isEditMode: PropTypes.bool
+  isEditMode: PropTypes.bool,
+  serviceStatus: PropTypes.object
 }
 
-const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderCategories, onReorderServices, isEditMode }) => {
+const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderCategories, onReorderServices, isEditMode, serviceStatus }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -113,7 +115,7 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
   }
 
   return (
-    <div className="container dark:text-white max-w-screen-xl p-2 xl:p-0 xl:mt-6">
+    <div className="chassis-rack container max-w-screen-xl p-2 xl:p-0 xl:mt-6">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -137,6 +139,7 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
                 onOpenEditCategory={onOpenEditCategory}
                 onReorderServices={onReorderServices}
                 isEditMode={isEditMode}
+                serviceStatus={serviceStatus}
               />
             ))}
           </ul>
@@ -156,7 +159,8 @@ ServiceGrid.propTypes = {
   onOpenEditCategory: PropTypes.func,
   onReorderCategories: PropTypes.func,
   onReorderServices: PropTypes.func,
-  isEditMode: PropTypes.bool
+  isEditMode: PropTypes.bool,
+  serviceStatus: PropTypes.object
 }
 
 export default ServiceGrid 

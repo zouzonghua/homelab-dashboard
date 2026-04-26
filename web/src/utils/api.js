@@ -42,3 +42,31 @@ export const saveConfig = async (nextConfig) => {
 
   return await response.json()
 }
+
+export const fetchStatus = async () => {
+  const response = await fetch('/api/status')
+  if (!response.ok) {
+    throw new Error(`加载服务状态失败: ${response.status}`)
+  }
+  return await response.json()
+}
+
+export const subscribeStatus = (onStatus, onError) => {
+  if (typeof EventSource === 'undefined') {
+    return null
+  }
+
+  const source = new EventSource('/api/status/stream')
+  source.addEventListener('status', (event) => {
+    try {
+      onStatus(JSON.parse(event.data))
+    } catch (error) {
+      onError?.(error)
+    }
+  })
+  source.onerror = (event) => {
+    onError?.(event)
+  }
+
+  return () => source.close()
+}

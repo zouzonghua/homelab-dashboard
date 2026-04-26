@@ -14,8 +14,10 @@ type Category struct {
 }
 
 type Service struct {
-	Name   string `json:"name"`
-	Logo   string `json:"logo"`
-	URL    string `json:"url"`
-	Target string `json:"target"`
+	Name           string `json:"name"`
+	Logo           string `json:"logo"`
+	URL            string `json:"url"`
+	Target         string `json:"target"`
+	MonitorURL     string `json:"monitorUrl,omitempty"`
+	MonitorEnabled bool   `json:"monitorEnabled,omitempty"`
 }
