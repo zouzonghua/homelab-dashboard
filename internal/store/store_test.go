@@ -3,8 +3,10 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	_ "modernc.org/sqlite"
 
@@ -26,12 +28,87 @@ func TestOpenCreatesSchema(t *testing.T) {
 	}
 	defer db.Close()
 
-	for _, table := range []string{"configs", "categories", "services"} {
+	for _, table := range []string{"schema_migrations", "configs", "categories", "services"} {
 		var name string
 		err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`, table).Scan(&name)
 		if err != nil {
 			t.Fatalf("expected table %s to exist: %v", table, err)
 		}
+	}
+}
+
+func ptr(value string) *string {
+	return &value
+}
+
+func boolPtr(value bool) *bool {
+	return &value
+}
+
+func TestOpenRunsMigrationsIdempotently(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "homelab.db")
+
+	first, err := Open(dbPath, config.Config{})
+	if err != nil {
+		t.Fatalf("first Open() error = %v", err)
+	}
+	if err := first.Close(); err != nil {
+		t.Fatalf("first Close() error = %v", err)
+	}
+
+	second, err := Open(dbPath, config.Config{})
+	if err != nil {
+		t.Fatalf("second Open() error = %v", err)
+	}
+	defer second.Close()
+
+	var count int
+	if err := second.db.QueryRow(`SELECT COUNT(*) FROM schema_migrations`).Scan(&count); err != nil {
+		t.Fatalf("query schema_migrations: %v", err)
+	}
+	if count == 0 {
+		t.Fatal("expected applied migrations to be recorded")
+	}
+}
+
+func TestDashboardColumnsAreIntegerAndSeedConfigStillWorks(t *testing.T) {
+	ctx := context.Background()
+	dbPath := filepath.Join(t.TempDir(), "homelab.db")
+	replacement := sampleConfig("dashboard")
+	replacement.Columns = "3"
+
+	store, err := Open(dbPath, config.Config{})
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	defer store.Close()
+
+	if err := store.ReplaceConfig(ctx, replacement); err != nil {
+		t.Fatalf("ReplaceConfig() error = %v", err)
+	}
+
+	var columnType string
+	if err := store.db.QueryRow(`SELECT type FROM pragma_table_info('configs') WHERE name = 'columns'`).Scan(&columnType); err != nil {
+		t.Fatalf("query columns type: %v", err)
+	}
+	if columnType != "INTEGER" {
+		t.Fatalf("configs.columns type = %q, want INTEGER", columnType)
+	}
+
+	dashboard, err := store.LoadDashboard(ctx)
+	if err != nil {
+		t.Fatalf("LoadDashboard() error = %v", err)
+	}
+	if dashboard.Columns != 3 {
+		t.Fatalf("dashboard columns = %d, want 3", dashboard.Columns)
+	}
+
+	seedConfig, err := store.LoadConfig(ctx)
+	if err != nil {
+		t.Fatalf("LoadConfig() error = %v", err)
+	}
+	if seedConfig.Columns != "3" {
+		t.Fatalf("seed config columns = %q, want 3", seedConfig.Columns)
 	}
 }
 
@@ -100,6 +177,81 @@ func TestReplaceConfigPersistsOrderAndValues(t *testing.T) {
 	}
 
 	assertConfigEqual(t, got, replacement)
+}
+
+func TestListCategoriesDoesNotReenterSQLiteConnection(t *testing.T) {
+	store, err := Open(filepath.Join(t.TempDir(), "homelab.db"), sampleConfig("seed"))
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	defer store.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	categories, err := store.ListCategories(ctx)
+	if err != nil {
+		t.Fatalf("ListCategories() error = %v", err)
+	}
+	if len(categories) != 1 || categories[0].Name != "Media" {
+		t.Fatalf("categories = %#v", categories)
+	}
+}
+
+func TestCategoryAndServiceResourcesCRUD(t *testing.T) {
+	ctx := context.Background()
+	store, err := Open(filepath.Join(t.TempDir(), "homelab.db"), sampleConfig("resources"))
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	defer store.Close()
+
+	category, err := store.CreateCategory(ctx, config.CategoryResource{Name: "Apps", Icon: "apps"})
+	if err != nil {
+		t.Fatalf("CreateCategory() error = %v", err)
+	}
+	if category.ID == 0 {
+		t.Fatal("category ID was not assigned")
+	}
+
+	service, err := store.CreateService(ctx, config.ServiceResource{
+		CategoryID:     category.ID,
+		Name:           "Grafana",
+		Logo:           "grafana.png",
+		URL:            "https://grafana.example",
+		Target:         "_blank",
+		MonitorURL:     "https://grafana.example/health",
+		MonitorEnabled: true,
+	})
+	if err != nil {
+		t.Fatalf("CreateService() error = %v", err)
+	}
+	if service.ID == 0 {
+		t.Fatal("service ID was not assigned")
+	}
+
+	renamedCategory, err := store.UpdateCategory(ctx, category.ID, config.CategoryResourcePatch{Name: ptr("Infra")})
+	if err != nil {
+		t.Fatalf("UpdateCategory() error = %v", err)
+	}
+	if renamedCategory.Name != "Infra" || renamedCategory.Icon != "apps" {
+		t.Fatalf("updated category = %#v", renamedCategory)
+	}
+
+	updatedService, err := store.UpdateService(ctx, service.ID, config.ServiceResourcePatch{Name: ptr("Metrics"), MonitorEnabled: boolPtr(false)})
+	if err != nil {
+		t.Fatalf("UpdateService() error = %v", err)
+	}
+	if updatedService.Name != "Metrics" || updatedService.MonitorEnabled {
+		t.Fatalf("updated service = %#v", updatedService)
+	}
+
+	if err := store.DeleteCategory(ctx, category.ID); err != nil {
+		t.Fatalf("DeleteCategory() error = %v", err)
+	}
+	if _, err := store.GetService(ctx, service.ID); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("GetService() after category delete error = %v, want ErrNotFound", err)
+	}
 }
 
 func sampleConfig(title string) config.Config {

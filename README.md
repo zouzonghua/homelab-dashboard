@@ -48,10 +48,11 @@ npm --prefix web run preview
 
 项目现在提供 Go API 和 SQLite 持久化：
 
-- `GET /api/config`：读取仪表盘配置
-- `PUT /api/config`：保存完整配置
+- OpenAPI v1 契约：`api/openapi.yaml`
+- 资源化 API v1：`/api/v1/dashboard`、`/api/v1/categories`、`/api/v1/services`、`/api/v1/status`
+- 配置导入导出 API：`GET /api/v1/export`、`PUT /api/v1/import`
 - 默认数据库路径：`data/homelab.db`
-- 默认 seed 配置路径：`web/src/assets/config.json`
+- 默认 seed：后端内置 `internal/config/default-dashboard.json`
 - 默认静态资源目录：`web/dist`
 - 默认端口：`8080`
 
@@ -61,7 +62,7 @@ npm --prefix web run preview
 HOMELAB_DB_PATH=.tmp/homelab.db HOMELAB_STATIC_DIR=web/dist PORT=8080 go run ./cmd/server
 ```
 
-首次启动时，如果 SQLite 为空，会从 `web/src/assets/config.json` 导入默认配置。
+首次启动时，如果 SQLite 为空，会从后端内置 seed 初始化 dashboard/categories/services。需要覆盖默认 seed 时，设置 `HOMELAB_SEED_PATH=/path/to/dashboard.json`。
 
 本地开发不需要 Docker。常规调试方式是两个终端：
 
@@ -136,11 +137,14 @@ GitHub Actions 会在以下场景发布镜像到 Docker Hub：
 ## 测试
 
 ```bash
+# OpenAPI YAML 解析校验
+ruby -e "require 'yaml'; YAML.load_file('api/openapi.yaml')"
+
 # Go 单元/集成测试
-go test ./...
+go test ./cmd/... ./internal/...
 
 # 前端单元测试
-npm --prefix web test -- src/utils/api.test.jsx
+npm --prefix web test
 
 # E2E 测试
 npm --prefix web run test:e2e
@@ -148,7 +152,7 @@ npm --prefix web run test:e2e
 
 ## 配置说明
 
-配置文件位于 `web/src/assets/config.json`，你可以根据需要修改以下配置：
+配置持久化在 SQLite 中。你可以通过 `GET /api/v1/export` 导出兼容旧格式的 JSON，通过 `PUT /api/v1/import` 导入并替换当前 SQLite 配置：
 
 ```javascript
 {

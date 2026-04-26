@@ -1,27 +1,37 @@
-import { useState } from 'react'
-import PropTypes from 'prop-types'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
+import type { BivariantCallback, Service } from '../types'
 
-const ServiceEditForm = ({ service, onSave, onCancel, onDelete }) => {
+type ServiceFormData = Pick<Service, 'name' | 'logo' | 'url' | 'target' | 'monitorEnabled' | 'monitorUrl'>
+
+type ServiceEditFormProps = {
+  service: Service
+  onSave: BivariantCallback<[ServiceFormData]>
+  onCancel: () => void
+  onDelete?: () => void
+}
+
+const ServiceEditForm = ({ service, onSave, onCancel, onDelete }: ServiceEditFormProps) => {
   const [formData, setFormData] = useState({
     name: service.name,
-    logo: service.logo,
+    logo: service.logo || '',
     url: service.url,
     target: service.target || '_blank',
     monitorEnabled: service.monitorEnabled || false,
     monitorUrl: service.monitorUrl || ''
   });
 
-  const handleChange = (e) => {
-    const { checked, name, type, value } = e.target;
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, type, value } = e.currentTarget;
+    const checked = e.currentTarget instanceof HTMLInputElement ? e.currentTarget.checked : false;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSave({
       ...formData,
@@ -151,20 +161,6 @@ const ServiceEditForm = ({ service, onSave, onCancel, onDelete }) => {
       </div>
     </form>
   );
-};
-
-ServiceEditForm.propTypes = {
-  service: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    logo: PropTypes.string,
-    url: PropTypes.string.isRequired,
-    target: PropTypes.string,
-    monitorEnabled: PropTypes.bool,
-    monitorUrl: PropTypes.string
-  }).isRequired,
-  onSave: PropTypes.func.isRequired,
-  onCancel: PropTypes.func.isRequired,
-  onDelete: PropTypes.func
 };
 
 export default ServiceEditForm;

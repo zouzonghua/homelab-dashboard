@@ -1,14 +1,21 @@
 import { useState } from 'react'
-import PropTypes from 'prop-types'
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import * as solidIcons from "@fortawesome/free-solid-svg-icons";
+import { faFolder } from "@fortawesome/free-solid-svg-icons/faFolder";
+import AsyncSolidIcon from './AsyncSolidIcon'
+import {
+  availableSolidIconNames,
+  getSolidIconClassFromName,
+  getSolidIconNameFromClass
+} from '../utils/fontawesomeIcons'
+
+type IconPickerProps = {
+  value?: string
+  onChange: (value: string) => void
+}
 
 // 收集所有可用的图标
-const availableIcons = Object.keys(solidIcons)
-  .filter(key => key.startsWith('fa') && key !== 'fa' && key !== 'fas')
+const availableIcons = availableSolidIconNames
   .map(key => ({
     name: key,
-    icon: solidIcons[key]
   }));
 
 // 常用图标列表（排在前面）
@@ -38,7 +45,7 @@ const popularIcons = [
   'faTag', 'faTags', 'faBookmark', 'faAward', 'faTrophy'
 ];
 
-const IconPicker = ({ value, onChange }) => {
+const IconPicker = ({ value = '', onChange }: IconPickerProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAll, setShowAll] = useState(false);
 
@@ -56,16 +63,7 @@ const IconPicker = ({ value, onChange }) => {
   // 显示的图标数量
   const displayIcons = showAll || searchTerm ? filteredIcons : filteredIcons.slice(0, 60);
 
-  // 从 value 中提取图标名称（例如 "fa-solid fa-home" -> "faHome"）
-  const getIconNameFromValue = (val) => {
-    if (!val) return '';
-    const parts = val.split(' ');
-    const iconPart = parts[parts.length - 1]; // "fa-home"
-    // 转换为驼峰命名 "fa-home" -> "faHome"
-    return 'fa' + iconPart.split('-').slice(1).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
-  };
-
-  const currentIconName = getIconNameFromValue(value);
+  const currentIconName = getSolidIconNameFromClass(value);
 
   return (
     <div className="space-y-3">
@@ -84,8 +82,9 @@ const IconPicker = ({ value, onChange }) => {
       {value && (
         <div className="flex items-center space-x-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md">
           <span className="text-sm text-gray-600 dark:text-gray-400">当前图标:</span>
-          <FontAwesomeIcon
-            icon={solidIcons[currentIconName]}
+          <AsyncSolidIcon
+            iconName={currentIconName}
+            fallbackIcon={faFolder}
             className="text-2xl text-blue-600 dark:text-blue-400"
           />
           <span className="text-sm font-mono text-gray-600 dark:text-gray-400">{value}</span>
@@ -95,9 +94,9 @@ const IconPicker = ({ value, onChange }) => {
       {/* 图标网格 */}
       <div className="max-h-64 overflow-y-auto border rounded-md dark:border-gray-700 p-2">
         <div className="grid grid-cols-8 gap-2">
-          {displayIcons.map(({ name, icon }) => {
+          {displayIcons.map(({ name }) => {
             // 转换图标名称为 CSS 类名格式
-            const iconClass = `fa-solid fa-${name.slice(2).replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+            const iconClass = getSolidIconClassFromName(name);
             const isSelected = currentIconName === name;
 
             return (
@@ -112,7 +111,7 @@ const IconPicker = ({ value, onChange }) => {
                 }`}
                 title={iconClass}
               >
-                <FontAwesomeIcon icon={icon} className="text-lg" />
+                <AsyncSolidIcon iconName={name} className="text-lg" />
               </button>
             );
           })}
@@ -160,11 +159,6 @@ const IconPicker = ({ value, onChange }) => {
       </details>
     </div>
   );
-};
-
-IconPicker.propTypes = {
-  value: PropTypes.string,
-  onChange: PropTypes.func.isRequired
 };
 
 export default IconPicker;

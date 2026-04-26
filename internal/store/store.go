@@ -3,14 +3,19 @@ package store
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	_ "modernc.org/sqlite"
 
 	"github.com/zouzonghua/homelab-dashboard/internal/config"
 )
+
+var ErrNotFound = errors.New("not found")
 
 type Store struct {
 	db   *sql.DB
@@ -29,6 +34,10 @@ func Open(path string, seed config.Config) (*Store, error) {
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
+	if _, err := db.Exec(`PRAGMA foreign_keys = ON`); err != nil {
+		db.Close()
+		return nil, err
+	}
 
 	store := &Store{db: db, seed: seed}
 	if err := store.createSchema(context.Background()); err != nil {
@@ -51,10 +60,12 @@ func (s *Store) LoadConfig(ctx context.Context) (config.Config, error) {
 	}
 
 	var cfg config.Config
-	err = s.db.QueryRowContext(ctx, `SELECT date, title, columns FROM configs WHERE id = 1`).Scan(&cfg.Date, &cfg.Title, &cfg.Columns)
+	var columns int
+	err = s.db.QueryRowContext(ctx, `SELECT date, title, columns FROM configs WHERE id = 1`).Scan(&cfg.Date, &cfg.Title, &columns)
 	if err != nil {
 		return config.Config{}, err
 	}
+	cfg.Columns = strconv.Itoa(columns)
 
 	rows, err := s.db.QueryContext(ctx, `SELECT id, name, icon FROM categories ORDER BY order_idx`)
 	if err != nil {
@@ -108,7 +119,15 @@ func (s *Store) ReplaceConfig(ctx context.Context, cfg config.Config) error {
 			return err
 		}
 	}
-	if _, err := tx.ExecContext(ctx, `INSERT INTO configs (id, date, title, columns) VALUES (1, ?, ?, ?)`, cfg.Date, cfg.Title, cfg.Columns); err != nil {
+	columns := 0
+	if strings.TrimSpace(cfg.Columns) != "" {
+		var err error
+		columns, err = strconv.Atoi(strings.TrimSpace(cfg.Columns))
+		if err != nil {
+			return err
+		}
+	}
+	if _, err := tx.ExecContext(ctx, `INSERT INTO configs (id, date, title, columns) VALUES (1, ?, ?, ?)`, cfg.Date, cfg.Title, columns); err != nil {
 		return err
 	}
 
@@ -149,11 +168,15 @@ func (s *Store) Close() error {
 
 func (s *Store) createSchema(ctx context.Context) error {
 	_, err := s.db.ExecContext(ctx, `
+CREATE TABLE IF NOT EXISTS schema_migrations (
+	version INTEGER PRIMARY KEY,
+	applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE IF NOT EXISTS configs (
 	id INTEGER PRIMARY KEY,
 	date TEXT NOT NULL,
 	title TEXT NOT NULL,
-	columns TEXT NOT NULL
+	columns INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS categories (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -176,7 +199,21 @@ CREATE TABLE IF NOT EXISTS services (
 	if err != nil {
 		return err
 	}
-	return s.ensureServiceColumns(ctx)
+	for _, migration := range []struct {
+		version int
+		run     func(context.Context) error
+	}{
+		{version: 1, run: s.ensureConfigColumnsInteger},
+		{version: 2, run: s.ensureServiceColumns},
+	} {
+		if err := migration.run(ctx); err != nil {
+			return err
+		}
+		if _, err := s.db.ExecContext(ctx, `INSERT OR IGNORE INTO schema_migrations (version) VALUES (?)`, migration.version); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Store) isEmpty(ctx context.Context) (bool, error) {
@@ -235,6 +272,28 @@ func (s *Store) ensureServiceColumns(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func (s *Store) ensureConfigColumnsInteger(ctx context.Context) error {
+	var columnType string
+	if err := s.db.QueryRowContext(ctx, `SELECT type FROM pragma_table_info('configs') WHERE name = 'columns'`).Scan(&columnType); err != nil {
+		return err
+	}
+	if strings.EqualFold(columnType, "INTEGER") {
+		return nil
+	}
+	_, err := s.db.ExecContext(ctx, `
+ALTER TABLE configs RENAME TO configs_old;
+CREATE TABLE configs (
+	id INTEGER PRIMARY KEY,
+	date TEXT NOT NULL,
+	title TEXT NOT NULL,
+	columns INTEGER NOT NULL
+);
+INSERT INTO configs (id, date, title, columns)
+	SELECT id, date, title, CAST(columns AS INTEGER) FROM configs_old;
+DROP TABLE configs_old;`)
+	return err
 }
 
 func (s *Store) serviceColumns(ctx context.Context) (map[string]bool, error) {

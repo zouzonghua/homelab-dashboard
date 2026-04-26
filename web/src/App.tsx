@@ -5,43 +5,56 @@ import CategoryAddForm from './components/CategoryAddForm'
 import CategoryEditForm from './components/CategoryEditForm'
 import ServiceAddForm from './components/ServiceAddForm'
 import ServiceEditForm from './components/ServiceEditForm'
-import { fetchConfig, fetchStatus, saveConfig, subscribeStatus } from './utils/api'
 import {
-  saveConfigToStorage,
-  loadConfigFromStorage,
+  type SaveConfigOptions,
+  dashboardApi,
+  fetchDashboardConfig,
+  saveDashboardConfig,
+  subscribeStatus,
+} from './api'
+import type { Category, DashboardConfig, Service } from './types'
+import {
   exportConfig as exportConfigToFile,
   importConfig as importConfigFromFile
 } from './services/configService'
 import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
+type EditingService = {
+  service: Service
+  categoryName: string
+  serviceIndex: number
+}
+
+type AddingService = {
+  categoryName: string
+}
+
+type EditingCategory = {
+  category: Category
+  categoryIndex: number
+}
+
 function App() {
-  const [config, setConfig] = useState(null)
+  const [config, setConfig] = useState<DashboardConfig | null>(null)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [error, setError] = useState<string | null>(null)
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
-  const [editingService, setEditingService] = useState(null) // { service, categoryName, serviceIndex }
-  const [addingService, setAddingService] = useState(null) // { categoryName }
-  const [editingCategory, setEditingCategory] = useState(null) // { category, categoryIndex }
-  const [serviceStatus, setServiceStatus] = useState({})
+  const [editingService, setEditingService] = useState<EditingService | null>(null)
+  const [addingService, setAddingService] = useState<AddingService | null>(null)
+  const [editingCategory, setEditingCategory] = useState<EditingCategory | null>(null)
+  const [serviceStatus, setServiceStatus] = useState<Record<string, unknown>>({})
 
   useEffect(() => {
     const loadConfig = async () => {
       try {
-        const data = await fetchConfig();
+        const data = await fetchDashboardConfig();
         setConfig(data);
         document.title = data.title || "HomeLab Dashboard";
       } catch (err) {
-        const storedConfig = loadConfigFromStorage();
-
-        if (storedConfig) {
-          setConfig(storedConfig);
-          document.title = storedConfig.title || "HomeLab Dashboard";
-        } else {
-          setError('配置加载失败');
-          console.error(err);
-        }
+        setError('配置加载失败');
+        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -55,7 +68,7 @@ function App() {
 
     const loadStatus = async () => {
       try {
-        const status = await fetchStatus();
+        const status = await dashboardApi.getStatus();
         if (import.meta.env.VITE_DEBUG_STATUS === '1') {
           console.debug('[status] loaded', status);
         }
@@ -66,8 +79,8 @@ function App() {
     };
 
     loadStatus();
-    let intervalId = null;
-    let unsubscribe = null;
+    let intervalId: number | null = null;
+    let unsubscribe: (() => void) | null = null;
     const startPolling = () => {
       if (intervalId) return;
       intervalId = window.setInterval(loadStatus, 30000);
@@ -99,11 +112,17 @@ function App() {
     };
   }, [config]);
 
-  const persistConfig = async (nextConfig, successMessage) => {
+  const persistConfig = async (
+    nextConfig: DashboardConfig,
+    successMessage: string,
+    options: SaveConfigOptions
+  ) => {
     try {
-      await saveConfig(nextConfig);
-      saveConfigToStorage(nextConfig);
-      fetchStatus()
+      await saveDashboardConfig(nextConfig, options);
+      const refreshedConfig = await fetchDashboardConfig();
+      setConfig(refreshedConfig);
+      document.title = refreshedConfig.title || "HomeLab Dashboard";
+      dashboardApi.getStatus()
         .then((status) => {
           if (import.meta.env.VITE_DEBUG_STATUS === '1') {
             console.debug('[status] refreshed after save', status);
@@ -118,8 +137,7 @@ function App() {
       });
     } catch (error) {
       console.error('API 保存配置失败:', error);
-      saveConfigToStorage(nextConfig);
-      toast.success('已保存到本地缓存', {
+      toast.error('保存到服务端失败', {
         autoClose: 2000,
         hideProgressBar: true,
         position: "bottom-right"
@@ -127,17 +145,26 @@ function App() {
     }
   };
 
-  const handleEditService = (categoryName, updatedService, serviceIndex) => {
+  const handleEditService = (
+    categoryName: string,
+    updatedService: Service,
+    serviceIndex: number
+  ) => {
     setConfig(prevConfig => {
+      if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
       const categoryIndex = newConfig.items.findIndex(item => item.name === categoryName);
 
       if (categoryIndex !== -1) {
-        newConfig.items[categoryIndex].list[serviceIndex] = updatedService;
+        const nextService = {
+          ...newConfig.items[categoryIndex].list[serviceIndex],
+          ...updatedService,
+        };
+        newConfig.items[categoryIndex].list[serviceIndex] = nextService;
 
         // 编辑后自动保存配置
         setTimeout(() => {
-          persistConfig(newConfig, '配置已自动保存');
+          persistConfig(newConfig, '配置已自动保存', { action: 'updateService', service: nextService });
         }, 0);
       }
 
@@ -146,17 +173,28 @@ function App() {
     setEditingService(null); // 关闭编辑模态框
   };
 
-  const handleAddService = (categoryName, newService) => {
+  const handleAddService = (categoryName: string, newService: Service) => {
     setConfig(prevConfig => {
+      if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
       const categoryIndex = newConfig.items.findIndex(item => item.name === categoryName);
 
       if (categoryIndex !== -1) {
         newConfig.items[categoryIndex].list.push(newService);
 
+        const categoryId = newConfig.items[categoryIndex].id
+        if (categoryId == null) {
+          toast.error('分类缺少服务端 ID，无法添加服务')
+          return newConfig
+        }
+
         // 添加后自动保存配置
         setTimeout(() => {
-          persistConfig(newConfig, `服务 "${newService.name}" 已添加`);
+          persistConfig(newConfig, `服务 "${newService.name}" 已添加`, {
+            action: 'createService',
+            categoryId,
+            service: newService,
+          });
         }, 0);
       }
 
@@ -165,8 +203,9 @@ function App() {
     setAddingService(null); // 关闭添加模态框
   };
 
-  const handleDeleteService = (categoryName, serviceIndex) => {
+  const handleDeleteService = (categoryName: string, serviceIndex: number) => {
     setConfig(prevConfig => {
+      if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
       const categoryIndex = newConfig.items.findIndex(item => item.name === categoryName);
 
@@ -176,7 +215,10 @@ function App() {
 
         // 删除后自动保存配置
         setTimeout(() => {
-          persistConfig(newConfig, `服务 "${deletedService.name}" 已删除`);
+          persistConfig(newConfig, `服务 "${deletedService.name}" 已删除`, {
+            action: 'deleteService',
+            service: deletedService,
+          });
         }, 0);
       }
 
@@ -184,14 +226,18 @@ function App() {
     });
   };
 
-  const handleAddCategory = (newCategory) => {
+  const handleAddCategory = (newCategory: Category) => {
     setConfig(prevConfig => {
+      if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
       newConfig.items.push(newCategory);
 
       // 添加分类后自动保存配置
       setTimeout(() => {
-        persistConfig(newConfig, `分类 "${newCategory.name}" 已添加`);
+        persistConfig(newConfig, `分类 "${newCategory.name}" 已添加`, {
+          action: 'createCategory',
+          category: newCategory,
+        });
       }, 0);
 
       return newConfig;
@@ -199,17 +245,22 @@ function App() {
     setIsAddingCategory(false);
   };
 
-  const handleDeleteCategory = (categoryName) => {
+  const handleDeleteCategory = (categoryName: string) => {
     setConfig(prevConfig => {
+      if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
       const categoryIndex = newConfig.items.findIndex(item => item.name === categoryName);
 
       if (categoryIndex !== -1) {
+        const deletedCategory = newConfig.items[categoryIndex];
         newConfig.items.splice(categoryIndex, 1);
 
         // 删除后自动保存配置
         setTimeout(() => {
-          persistConfig(newConfig, `分类 "${categoryName}" 已删除`);
+          persistConfig(newConfig, `分类 "${categoryName}" 已删除`, {
+            action: 'deleteCategory',
+            category: deletedCategory,
+          });
         }, 0);
       }
 
@@ -217,12 +268,13 @@ function App() {
     });
   };
 
-  const handleOpenEditCategory = (category, categoryIndex) => {
+  const handleOpenEditCategory = (category: Category, categoryIndex: number) => {
     setEditingCategory({ category, categoryIndex });
   };
 
-  const handleEditCategory = (categoryIndex, updatedCategory) => {
+  const handleEditCategory = (categoryIndex: number, updatedCategory: Pick<Category, 'name' | 'icon'>) => {
     setConfig(prevConfig => {
+      if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
       newConfig.items[categoryIndex] = {
         ...newConfig.items[categoryIndex],
@@ -232,7 +284,10 @@ function App() {
 
       // 编辑后自动保存配置
       setTimeout(() => {
-        persistConfig(newConfig, '分类已更新');
+        persistConfig(newConfig, '分类已更新', {
+          action: 'updateCategory',
+          category: newConfig.items[categoryIndex],
+        });
       }, 0);
 
       return newConfig;
@@ -240,21 +295,26 @@ function App() {
     setEditingCategory(null);
   };
 
-  const handleReorderCategories = (newCategories) => {
+  const handleReorderCategories = (newCategories: Category[]) => {
     setConfig(prevConfig => {
+      if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig, items: newCategories };
 
       // 重排序后自动保存配置
       setTimeout(() => {
-        persistConfig(newConfig, '分类顺序已更新');
+        persistConfig(newConfig, '分类顺序已更新', {
+          action: 'reorderCategories',
+          categories: newCategories,
+        });
       }, 0);
 
       return newConfig;
     });
   };
 
-  const handleReorderServices = (categoryName, newServices) => {
+  const handleReorderServices = (categoryName: string, newServices: Service[]) => {
     setConfig(prevConfig => {
+      if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
       const categoryIndex = newConfig.items.findIndex(item => item.name === categoryName);
 
@@ -263,7 +323,10 @@ function App() {
 
         // 重排序后自动保存配置
         setTimeout(() => {
-          persistConfig(newConfig, '服务顺序已更新');
+          persistConfig(newConfig, '服务顺序已更新', {
+            action: 'reorderServices',
+            services: newServices,
+          });
         }, 0);
       }
 
@@ -286,34 +349,35 @@ function App() {
     }
   };
 
-  const handleOpenEditService = (categoryName, service, serviceIndex) => {
+  const handleOpenEditService = (categoryName: string, service: Service, serviceIndex: number) => {
     setEditingService({ service, categoryName, serviceIndex });
   };
 
-  const handleOpenAddService = (categoryName) => {
+  const handleOpenAddService = (categoryName: string) => {
     setAddingService({ categoryName });
   };
 
-  const handleExportConfig = () => {
-    const success = exportConfigToFile(config);
-    if (success) {
+  const handleExportConfig = async () => {
+    try {
+      await exportConfigToFile();
       toast.success('配置已导出');
-    } else {
+    } catch (error) {
+      console.error('导出配置失败:', error);
       toast.error('导出配置失败');
     }
   };
 
-  const handleImportConfig = async (file) => {
+  const handleImportConfig = async (file: File) => {
     try {
       const importedConfig = await importConfigFromFile(file);
       if (importedConfig) {
         setConfig(importedConfig);
         document.title = importedConfig.title || "HomeLab Dashboard";
-        // 导入后自动保存配置
-        await persistConfig(importedConfig, '配置已导入并保存');
+        toast.success('配置已导入');
       }
     } catch (error) {
-      toast.error(`导入失败: ${error.message}`);
+      const message = error instanceof Error ? error.message : '未知错误';
+      toast.error(`导入失败: ${message}`);
     }
   };
 

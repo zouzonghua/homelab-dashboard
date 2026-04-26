@@ -20,7 +20,7 @@ build:
 
 test:
 	go test ./...
-	npm --prefix web test -- src/utils/api.test.jsx
+	npm --prefix web test
 
 e2e:
 	npm --prefix web run test:e2e

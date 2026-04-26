@@ -1,13 +1,22 @@
-import { createContext, useState, useEffect, useContext } from 'react';
+import { createContext, useState, useEffect, useContext, type ReactNode } from 'react';
 
-const ThemeContext = createContext();
+export type Theme = 'dark' | 'light' | 'system'
 
-export function ThemeProvider({ children }) {
+type ThemeContextValue = {
+  theme: Theme
+  setTheme: (theme: Theme) => void
+}
+
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
   // 主题状态：'dark', 'light', 'system'
-  const [theme, setTheme] = useState(() => {
+  const [theme, setTheme] = useState<Theme>(() => {
     // 尝试从本地存储获取主题设置
     const storedTheme = localStorage.getItem('theme');
-    return storedTheme || 'system';
+    return storedTheme === 'dark' || storedTheme === 'light' || storedTheme === 'system'
+      ? storedTheme
+      : 'system';
   });
 
   // 应用主题到 HTML 元素
@@ -40,7 +49,7 @@ export function ThemeProvider({ children }) {
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
-    const handleChange = (e) => {
+    const handleChange = (e: MediaQueryListEvent) => {
       const html = document.documentElement;
       html.classList.remove('dark', 'light');
       html.classList.add(e.matches ? 'dark' : 'light');
@@ -58,5 +67,9 @@ export function ThemeProvider({ children }) {
 }
 
 export function useTheme() {
-  return useContext(ThemeContext);
+  const context = useContext(ThemeContext);
+  if (!context) {
+    throw new Error('useTheme must be used within ThemeProvider');
+  }
+  return context;
 } 

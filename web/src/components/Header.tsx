@@ -1,19 +1,34 @@
-import PropTypes from 'prop-types'
+import type { CSSProperties } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faEdit, faCheck } from "@fortawesome/free-solid-svg-icons";
 // import Avatar from '@/assets/icons/Avatar.jpg'
 import ThemeToggle from './ThemeToggle'
 import ConfigTools from './ConfigTools'
+import { getServiceStatus } from '../api'
+import type { Category, ServiceStatus, ServiceStatusMap } from '../types'
 
 const  Avatar = 'https://avatars.githubusercontent.com/u/53508103?v=4'
 
-const getStableHash = (value) =>
+type HeaderProps = {
+  title: string
+  onExportConfig: () => void
+  onImportConfig: (file: File) => void
+  onAddCategory: () => void
+  isEditMode: boolean
+  onToggleEditMode: () => void
+  categories?: Category[]
+  serviceStatus?: ServiceStatusMap
+}
+
+type StatusLedStyle = CSSProperties & Record<'--status-delay' | '--status-duration' | '--status-spark-delay' | '--status-spark-duration', string>
+
+const getStableHash = (value?: string) =>
   Array.from(value || '').reduce((hash, char) => {
     const nextHash = ((hash << 5) - hash) + char.charCodeAt(0)
     return nextHash >>> 0
   }, 0)
 
-const getCategoryLed = (category, serviceStatus) => {
+const getCategoryLed = (category: Category, serviceStatus: ServiceStatusMap) => {
   const monitored = category.list.filter((service) => service.monitorEnabled)
   if (monitored.length === 0) {
     return {
@@ -23,7 +38,7 @@ const getCategoryLed = (category, serviceStatus) => {
   }
 
   const counts = monitored.reduce((nextCounts, service) => {
-    const status = serviceStatus?.[service.name]?.status
+    const status = (getServiceStatus(serviceStatus, service) as ServiceStatus | undefined)?.status
     if (status === 'up') {
       nextCounts.up += 1
     } else if (status === 'down') {
@@ -46,7 +61,7 @@ const getCategoryLed = (category, serviceStatus) => {
   }
 }
 
-const getCategoryLedStyle = (category) => {
+const getCategoryLedStyle = (category: Category): StatusLedStyle => {
   const seed = getStableHash(category.name)
   return {
     '--status-delay': `${(seed % 151) / 100}s`,
@@ -65,12 +80,12 @@ const Header = ({
   onToggleEditMode,
   categories = [],
   serviceStatus = {},
-}) => {
+}: HeaderProps) => {
   return (
     <div className="chassis-header head w-screen flex justify-center">
       <div className="chassis-header__container head__container max-w-screen-xl w-full py-3.5 h-24 flex">
         <div className="head__logo flex flex-none items-center">
-          <a className="chassis-avatar" href="https://zouzonghua.cn/" tabIndex="0" aria-label="访问个人网站">
+          <a className="chassis-avatar" href="https://zouzonghua.cn/" tabIndex={0} aria-label="访问个人网站">
             <img className="h-12 w-12 md:h-14 md:w-14 rounded-full" src={Avatar} alt="logo" />
           </a>
         </div>
@@ -83,7 +98,7 @@ const Header = ({
               const led = getCategoryLed(category, serviceStatus)
               return (
                 <span
-                  key={category.name}
+                  key={category.id != null ? String(category.id) : category.name}
                   className={`status-port ${led.className}`}
                   style={getCategoryLedStyle(category)}
                   title={led.title}
@@ -126,20 +141,6 @@ const Header = ({
       </div>
     </div>
   )
-}
-
-Header.propTypes = {
-  title: PropTypes.string.isRequired,
-  onExportConfig: PropTypes.func.isRequired,
-  onImportConfig: PropTypes.func.isRequired,
-  onAddCategory: PropTypes.func.isRequired,
-  isEditMode: PropTypes.bool.isRequired,
-  onToggleEditMode: PropTypes.func.isRequired,
-  categories: PropTypes.arrayOf(PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    list: PropTypes.array.isRequired,
-  })),
-  serviceStatus: PropTypes.object,
 }
 
 export default Header

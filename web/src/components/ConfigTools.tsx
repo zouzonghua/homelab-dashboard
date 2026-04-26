@@ -1,11 +1,15 @@
-import { useState, useRef } from 'react';
-import PropTypes from 'prop-types';
+import { useState, useRef, type ChangeEvent } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTools, faDownload, faUpload } from "@fortawesome/free-solid-svg-icons";
 
-const ConfigTools = ({ onExport, onImport }) => {
+type ConfigToolsProps = {
+  onExport: () => void
+  onImport: (file: File) => void
+}
+
+const ConfigTools = ({ onExport, onImport }: ConfigToolsProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
@@ -17,11 +21,11 @@ const ConfigTools = ({ onExport, onImport }) => {
   };
 
   const handleImportClick = () => {
-    fileInputRef.current.click();
+    fileInputRef.current?.click();
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       onImport(file);
       // 重置 input 值，允许导入相同文件
@@ -67,11 +71,6 @@ const ConfigTools = ({ onExport, onImport }) => {
       )}
     </div>
   );
-};
-
-ConfigTools.propTypes = {
-  onExport: PropTypes.func.isRequired,
-  onImport: PropTypes.func.isRequired,
 };
 
 export default ConfigTools; 

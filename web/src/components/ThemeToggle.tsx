@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme, type Theme } from '../contexts/ThemeContext';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSun, faMoon, faDesktop, faChevronDown } from "@fortawesome/free-solid-svg-icons";
 
 const ThemeToggle = () => {
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // 获取当前主题的图标
   const getCurrentIcon = () => {
@@ -24,15 +24,15 @@ const ThemeToggle = () => {
   };
 
   // 选择主题
-  const selectTheme = (newTheme) => {
+  const selectTheme = (newTheme: Theme) => {
     setTheme(newTheme);
     setIsOpen(false);
   };
 
   // 点击其他地方关闭下拉菜单
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && event.target instanceof Node && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };

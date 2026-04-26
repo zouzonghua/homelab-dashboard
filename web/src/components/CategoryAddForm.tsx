@@ -1,16 +1,21 @@
-import { useState } from 'react'
-import PropTypes from 'prop-types'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import IconPicker from './IconPicker'
+import type { BivariantCallback, Category } from '../types'
 
-const CategoryAddForm = ({ onAdd, onCancel }) => {
+type CategoryAddFormProps = {
+  onAdd: BivariantCallback<[Category]>
+  onCancel: () => void
+}
+
+const CategoryAddForm = ({ onAdd, onCancel }: CategoryAddFormProps) => {
   const [formData, setFormData] = useState({
     name: '',
     icon: 'fa-solid fa-folder'
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -18,7 +23,7 @@ const CategoryAddForm = ({ onAdd, onCancel }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onAdd({
       ...formData,
@@ -73,11 +78,6 @@ const CategoryAddForm = ({ onAdd, onCancel }) => {
       </form>
     </div>
   );
-};
-
-CategoryAddForm.propTypes = {
-  onAdd: PropTypes.func.isRequired,
-  onCancel: PropTypes.func.isRequired
 };
 
 export default CategoryAddForm;

@@ -1,15 +1,39 @@
-import { useState } from 'react'
-import PropTypes from 'prop-types'
+import { useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import type { DragHandleProps, Service, ServiceStatus } from '../types'
 
-const getStableHash = (value) =>
+type ServiceItemProps = {
+  service: Service
+  onOpenEdit?: () => void
+  onDelete?: () => void
+  isEditMode?: boolean
+  dragHandleProps?: DragHandleProps
+  status?: ServiceStatus
+}
+
+type StatusStyle = CSSProperties & Record<
+  | '--status-delay'
+  | '--status-duration'
+  | '--status-spark-delay'
+  | '--status-spark-duration'
+  | '--status-idle-color'
+  | '--status-off-color'
+  | '--status-on-color'
+  | '--status-hot-color'
+  | '--status-glow-alpha'
+  | '--status-hot-alpha'
+  | '--status-reflect-alpha',
+  string
+>
+
+const getStableHash = (value?: string) =>
   Array.from(value || '').reduce((hash, char) => {
     const nextHash = ((hash << 5) - hash) + char.charCodeAt(0)
     return nextHash >>> 0
   }, 0)
 
-const getFallbackColor = (service) => {
+const getFallbackColor = (service: Service) => {
   const seed = getStableHash(`${service.name}:${service.url}`)
   const hue = seed % 360
   const saturation = 62 + (seed % 18)
@@ -17,26 +41,26 @@ const getFallbackColor = (service) => {
   return `hsl(${hue} ${saturation}% ${lightness}%)`
 }
 
-const getStatusSeed = (service, key) =>
+const getStatusSeed = (service: Service, key: string) =>
   getStableHash(`${service.name}:${service.url}:${key}`)
 
-const escapeSVGText = (value) =>
+const escapeSVGText = (value: string) =>
   value.replace(/[&<>"']/g, (char) => ({
     '&': '&amp;',
     '<': '&lt;',
     '>': '&gt;',
     '"': '&quot;',
     "'": '&apos;',
-  }[char]))
+  }[char] ?? char))
 
-const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProps, status }) => {
+const ServiceItem = ({ service, onOpenEdit, isEditMode, dragHandleProps, status }: ServiceItemProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleClick = () => {
     window.open(service.url, service.target || '_blank')
   }
 
-  const handleKeyDown = (e) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       handleClick()
@@ -44,9 +68,9 @@ const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProp
   }
 
   // 动态导入图片
-  const getImagePath = (logo) => {
+  const getImagePath = (logo?: string) => {
     if (!logo) {
-      return `/api/icon?url=${encodeURIComponent(service.url)}&name=${encodeURIComponent(service.name)}`
+      return service.id ? `/api/v1/services/${encodeURIComponent(service.id)}/icon` : getFallbackLogo()
     }
     // 如果是完整URL（以 http 或 https 开头）
     if (logo.startsWith('http')) {
@@ -63,9 +87,9 @@ const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProp
     }
   }
 
-  const handleEditClick = (e) => {
+  const handleEditClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    onOpenEdit();
+    onOpenEdit?.();
   }
 
   const getStatusClass = () => {
@@ -73,7 +97,7 @@ const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProp
     return status.status === 'up' ? 'status-port status-online' : 'status-port status-port-down';
   }
 
-  const getStatusStyle = () => {
+  const getStatusStyle = (): StatusStyle | undefined => {
     if (status?.status !== 'up') return undefined;
     const primary = getStatusSeed(service, 'primary')
     const secondary = getStatusSeed(service, 'secondary')
@@ -90,9 +114,9 @@ const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProp
       '--status-off-color': `hsl(${hue} 76% ${Math.max(7, idleLightness - 7)}%)`,
       '--status-on-color': `hsl(${hue} 82% ${onLightness}%)`,
       '--status-hot-color': `hsl(${hue} 92% ${Math.min(68, onLightness + 12)}%)`,
-      '--status-glow-alpha': `${0.32 + (intensity % 26) / 100}`,
-      '--status-hot-alpha': `${0.68 + (secondary % 24) / 100}`,
-      '--status-reflect-alpha': `${0.22 + (primary % 20) / 100}`,
+      '--status-glow-alpha': String(0.32 + (intensity % 26) / 100),
+      '--status-hot-alpha': String(0.68 + (secondary % 24) / 100),
+      '--status-reflect-alpha': String(0.22 + (primary % 20) / 100),
     };
   }
 
@@ -130,7 +154,7 @@ const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProp
       onKeyDown={handleKeyDown}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      tabIndex="0"
+      tabIndex={0}
       aria-label={`访问 ${service.name}`}
       role="button"
     >
@@ -151,7 +175,7 @@ const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProp
           isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
         }`}
         title={isEditMode ? '拖拽排序' : ''}
-        onClick={(e) => isEditMode && e.stopPropagation()}
+        onClick={(e: MouseEvent<HTMLSpanElement>) => isEditMode && e.stopPropagation()}
       >
         <img
           src={getImagePath(service.logo)}
@@ -178,21 +202,6 @@ const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProp
       )}
     </div>
   )
-}
-
-ServiceItem.propTypes = {
-  service: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    logo: PropTypes.string,
-    url: PropTypes.string.isRequired,
-    target: PropTypes.string,
-    monitorEnabled: PropTypes.bool
-  }).isRequired,
-  onOpenEdit: PropTypes.func,
-  onDelete: PropTypes.func,
-  isEditMode: PropTypes.bool,
-  dragHandleProps: PropTypes.object,
-  status: PropTypes.object
 }
 
 export default ServiceItem 

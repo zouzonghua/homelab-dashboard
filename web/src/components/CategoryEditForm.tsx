@@ -1,16 +1,25 @@
-import { useState } from 'react'
-import PropTypes from 'prop-types'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import IconPicker from './IconPicker'
+import type { BivariantCallback, Category } from '../types'
 
-const CategoryEditForm = ({ category, onSave, onCancel, onDelete }) => {
+type CategoryEditData = Pick<Category, 'name' | 'icon'>
+
+type CategoryEditFormProps = {
+  category: CategoryEditData
+  onSave: BivariantCallback<[CategoryEditData]>
+  onCancel: () => void
+  onDelete?: () => void
+}
+
+const CategoryEditForm = ({ category, onSave, onCancel, onDelete }: CategoryEditFormProps) => {
   const [formData, setFormData] = useState({
     name: category.name,
     icon: category.icon || 'fa-solid fa-folder'
   });
 
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -18,7 +27,7 @@ const CategoryEditForm = ({ category, onSave, onCancel, onDelete }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onSave(formData);
   };
@@ -90,17 +99,6 @@ const CategoryEditForm = ({ category, onSave, onCancel, onDelete }) => {
       </form>
     </div>
   );
-};
-
-CategoryEditForm.propTypes = {
-  category: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    icon: PropTypes.string,
-    list: PropTypes.array
-  }).isRequired,
-  onSave: PropTypes.func.isRequired,
-  onCancel: PropTypes.func.isRequired,
-  onDelete: PropTypes.func
 };
 
 export default CategoryEditForm;

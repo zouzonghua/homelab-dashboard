@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -12,8 +11,7 @@ import (
 )
 
 func main() {
-	seedPath := envOrDefault("HOMELAB_SEED_PATH", "web/src/assets/config.json")
-	seed, err := readSeed(seedPath)
+	seed, err := config.LoadSeedFromEnv()
 	if err != nil {
 		log.Fatalf("read seed config: %v", err)
 	}
@@ -31,19 +29,6 @@ func main() {
 	if err := http.ListenAndServe(addr, api.NewServer(st, staticDir)); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func readSeed(path string) (config.Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return config.Config{}, err
-	}
-
-	var seed config.Config
-	if err := json.Unmarshal(data, &seed); err != nil {
-		return config.Config{}, err
-	}
-	return seed, nil
 }
 
 func envOrDefault(name, fallback string) string {

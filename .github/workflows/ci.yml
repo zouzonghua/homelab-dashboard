@@ -31,11 +31,17 @@ jobs:
       - name: Install web dependencies
         run: npm ci --prefix web
 
+      - name: Validate OpenAPI contract
+        run: ruby -e "require 'yaml'; YAML.load_file('api/openapi.yaml')"
+
       - name: Run Go tests
-        run: go test ./...
+        run: go test ./cmd/... ./internal/...
 
       - name: Run web unit tests
-        run: npm --prefix web test -- src/utils/api.test.jsx
+        run: npm --prefix web test
+
+      - name: Run web type check
+        run: npm --prefix web run typecheck
 
       - name: Build web
         run: npm --prefix web run build

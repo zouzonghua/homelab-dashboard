@@ -1,13 +1,15 @@
-import PropTypes from 'prop-types'
 import ServiceItem from './ServiceItem'
+import { getServiceStatus } from '../api'
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTrash, faFolder, faEdit } from "@fortawesome/free-solid-svg-icons";
-import * as solidIcons from "@fortawesome/free-solid-svg-icons";
+import AsyncSolidIcon from './AsyncSolidIcon'
+import { getSolidIconNameFromClass } from '../utils/fontawesomeIcons'
 
 import {
   DndContext,
   closestCenter,
+  type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -21,9 +23,35 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import type { Category, DragHandleProps, Service, ServiceStatus, ServiceStatusMap } from '../types'
+
+type SortableServiceItemProps = {
+  service: Service
+  index: number
+  onOpenEdit?: () => void
+  onDelete?: () => void
+  isEditMode?: boolean
+  status?: ServiceStatus
+}
+
+type ServiceCategoryProps = {
+  category: Category
+  onOpenEditService?: (service: Service, serviceIndex: number) => void
+  onOpenAddService?: () => void
+  onDeleteService?: (serviceIndex: number) => void
+  onDeleteCategory?: () => void
+  onEditCategory?: () => void
+  onReorderServices?: (services: Service[]) => void
+  isEditMode?: boolean
+  dragHandleProps?: DragHandleProps
+  serviceStatus?: ServiceStatusMap
+}
+
+const getServiceSortableId = (service: Service, index: number) =>
+  service.id != null ? String(service.id) : `${service.name}${index}`
 
 // 可排序的服务项组件
-const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode, status }) => {
+const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode, status }: SortableServiceItemProps) => {
   const {
     attributes,
     listeners,
@@ -31,7 +59,7 @@ const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode,
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: service.name + index, disabled: !isEditMode })
+  } = useSortable({ id: getServiceSortableId(service, index), disabled: !isEditMode })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -55,16 +83,18 @@ const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode,
   )
 }
 
-SortableServiceItem.propTypes = {
-  service: PropTypes.object.isRequired,
-  index: PropTypes.number.isRequired,
-  onOpenEdit: PropTypes.func,
-  onDelete: PropTypes.func,
-  isEditMode: PropTypes.bool,
-  status: PropTypes.object
-}
-
-const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onEditCategory, onReorderServices, isEditMode, dragHandleProps, serviceStatus }) => {
+const ServiceCategory = ({
+  category,
+  onOpenEditService,
+  onOpenAddService,
+  onDeleteService,
+  onDeleteCategory,
+  onEditCategory,
+  onReorderServices,
+  isEditMode,
+  dragHandleProps,
+  serviceStatus = {},
+}: ServiceCategoryProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -77,30 +107,20 @@ const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDele
   )
 
   // 根据图标字符串获取图标对象
-  const getIcon = (iconString) => {
+  const getIcon = (iconString?: string) => {
     if (!iconString) {
       return <FontAwesomeIcon icon={faFolder} />;
     }
 
-    try {
-      // 从 "fa-solid fa-home" 转换为 "faHome"
-      const iconName = iconString.split(' ').pop(); // "fa-home"
-      const camelCaseName = 'fa' + iconName.split('-').slice(1).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
-
-      const icon = solidIcons[camelCaseName];
-      if (icon) {
-        return <FontAwesomeIcon icon={icon} />;
-      }
-
-      // 如果找不到图标，返回默认文件夹图标
-      return <FontAwesomeIcon icon={faFolder} />;
-    } catch (error) {
-      console.error('Error loading icon:', error);
-      return <FontAwesomeIcon icon={faFolder} />;
-    }
+    return (
+      <AsyncSolidIcon
+        iconName={getSolidIconNameFromClass(iconString)}
+        fallbackIcon={faFolder}
+      />
+    );
   };
 
-  const handleDeleteService = (index) => {
+  const handleDeleteService = (index: number) => {
     if (onDeleteService && window.confirm(`确定要删除服务 "${category.list[index].name}" 吗？`)) {
       onDeleteService(index);
     }
@@ -112,15 +132,15 @@ const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDele
     }
   };
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
-    if (active.id !== over.id) {
-      const oldIndex = category.list.findIndex((_, idx) => active.id === category.list[idx].name + idx)
-      const newIndex = category.list.findIndex((_, idx) => over.id === category.list[idx].name + idx)
+    if (over && active.id !== over.id) {
+      const oldIndex = category.list.findIndex((service, idx) => active.id === getServiceSortableId(service, idx))
+      const newIndex = category.list.findIndex((service, idx) => over.id === getServiceSortableId(service, idx))
 
       const newServices = arrayMove(category.list, oldIndex, newIndex)
-      onReorderServices(newServices)
+      onReorderServices?.(newServices)
     }
   };
 
@@ -160,19 +180,19 @@ const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDele
         onDragEnd={handleDragEnd}
       >
         <SortableContext
-          items={category.list.map((service, idx) => service.name + idx)}
+          items={category.list.map((service, idx) => getServiceSortableId(service, idx))}
           strategy={verticalListSortingStrategy}
         >
           <ul>
             {category.list.map((service, index) => (
               <SortableServiceItem
-                key={service.name + index}
+                key={getServiceSortableId(service, index)}
                 service={service}
                 index={index}
-                onOpenEdit={() => onOpenEditService(service, index)}
+                onOpenEdit={() => onOpenEditService?.(service, index)}
                 onDelete={() => handleDeleteService(index)}
                 isEditMode={isEditMode}
-                status={serviceStatus?.[service.name]}
+                status={getServiceStatus(serviceStatus, service) as ServiceStatus | undefined}
               />
             ))}
             {/* 添加服务按钮 - 仅在编辑模式下显示 */}
@@ -193,23 +213,6 @@ const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDele
       </DndContext>
     </div>
   )
-}
-
-ServiceCategory.propTypes = {
-  category: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    icon: PropTypes.string,
-    list: PropTypes.array.isRequired
-  }).isRequired,
-  onOpenEditService: PropTypes.func,
-  onOpenAddService: PropTypes.func,
-  onDeleteService: PropTypes.func,
-  onDeleteCategory: PropTypes.func,
-  onEditCategory: PropTypes.func,
-  onReorderServices: PropTypes.func,
-  isEditMode: PropTypes.bool,
-  dragHandleProps: PropTypes.object,
-  serviceStatus: PropTypes.object
 }
 
 export default ServiceCategory 

@@ -1,9 +1,16 @@
-import { useState } from 'react'
-import PropTypes from 'prop-types'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
+import type { BivariantCallback, Service } from '../types'
 
-const ServiceAddForm = ({ onAdd, onCancel }) => {
+type ServiceFormData = Pick<Service, 'name' | 'logo' | 'url' | 'target' | 'monitorEnabled' | 'monitorUrl'>
+
+type ServiceAddFormProps = {
+  onAdd: BivariantCallback<[ServiceFormData]>
+  onCancel: () => void
+}
+
+const ServiceAddForm = ({ onAdd, onCancel }: ServiceAddFormProps) => {
   const [formData, setFormData] = useState({
     name: '',
     logo: '',
@@ -13,15 +20,16 @@ const ServiceAddForm = ({ onAdd, onCancel }) => {
     monitorUrl: ''
   });
 
-  const handleChange = (e) => {
-    const { checked, name, type, value } = e.target;
+  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, type, value } = e.currentTarget;
+    const checked = e.currentTarget instanceof HTMLInputElement ? e.currentTarget.checked : false;
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     onAdd({
       ...formData,
@@ -146,11 +154,6 @@ const ServiceAddForm = ({ onAdd, onCancel }) => {
       </div>
     </form>
   );
-};
-
-ServiceAddForm.propTypes = {
-  onAdd: PropTypes.func.isRequired,
-  onCancel: PropTypes.func.isRequired
 };
 
 export default ServiceAddForm;

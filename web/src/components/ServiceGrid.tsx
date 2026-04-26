@@ -1,8 +1,8 @@
-import PropTypes from 'prop-types'
 import ServiceCategory from './ServiceCategory'
 import {
   DndContext,
   closestCenter,
+  type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -17,9 +17,38 @@ import {
 } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import type { BivariantCallback, Category, Service, ServiceStatusMap } from '../types'
+
+type SortableCategoryItemProps = {
+  category: Category
+  index: number
+  columnClass: string
+  onOpenEditService?: BivariantCallback<[string, Service, number]>
+  onOpenAddService?: BivariantCallback<[string]>
+  onDeleteService?: BivariantCallback<[string, number]>
+  onDeleteCategory?: BivariantCallback<[string]>
+  onOpenEditCategory?: BivariantCallback<[Category, number]>
+  onReorderServices?: BivariantCallback<[string, Service[]]>
+  isEditMode?: boolean
+  serviceStatus?: ServiceStatusMap
+}
+
+type ServiceGridProps = {
+  categories: Category[]
+  columns?: string | number
+  onOpenEditService?: BivariantCallback<[string, Service, number]>
+  onOpenAddService?: BivariantCallback<[string]>
+  onDeleteService?: BivariantCallback<[string, number]>
+  onDeleteCategory?: BivariantCallback<[string]>
+  onOpenEditCategory?: BivariantCallback<[Category, number]>
+  onReorderCategories?: BivariantCallback<[Category[]]>
+  onReorderServices?: BivariantCallback<[string, Service[]]>
+  isEditMode?: boolean
+  serviceStatus?: ServiceStatusMap
+}
 
 // 可排序的分类项组件
-const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }) => {
+const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }: SortableCategoryItemProps) => {
   const {
     attributes,
     listeners,
@@ -46,15 +75,15 @@ const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService,
       <ServiceCategory
         category={category}
         onOpenEditService={(service, serviceIndex) =>
-          onOpenEditService(category.name, service, serviceIndex)
+          onOpenEditService?.(category.name, service, serviceIndex)
         }
-        onOpenAddService={() => onOpenAddService(category.name)}
+        onOpenAddService={() => onOpenAddService?.(category.name)}
         onDeleteService={(serviceIndex) =>
-          onDeleteService(category.name, serviceIndex)
+          onDeleteService?.(category.name, serviceIndex)
         }
-        onDeleteCategory={() => onDeleteCategory(category.name)}
-        onEditCategory={() => onOpenEditCategory(category, index)}
-        onReorderServices={(newServices) => onReorderServices(category.name, newServices)}
+        onDeleteCategory={() => onDeleteCategory?.(category.name)}
+        onEditCategory={() => onOpenEditCategory?.(category, index)}
+        onReorderServices={(newServices) => onReorderServices?.(category.name, newServices)}
         isEditMode={isEditMode}
         dragHandleProps={isEditMode ? { ...attributes, ...listeners } : {}}
         serviceStatus={serviceStatus}
@@ -63,21 +92,7 @@ const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService,
   )
 }
 
-SortableCategoryItem.propTypes = {
-  category: PropTypes.object.isRequired,
-  index: PropTypes.number.isRequired,
-  columnClass: PropTypes.string.isRequired,
-  onOpenEditService: PropTypes.func,
-  onOpenAddService: PropTypes.func,
-  onDeleteService: PropTypes.func,
-  onDeleteCategory: PropTypes.func,
-  onOpenEditCategory: PropTypes.func,
-  onReorderServices: PropTypes.func,
-  isEditMode: PropTypes.bool,
-  serviceStatus: PropTypes.object
-}
-
-const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderCategories, onReorderServices, isEditMode, serviceStatus }) => {
+const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderCategories, onReorderServices, isEditMode, serviceStatus }: ServiceGridProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -91,7 +106,7 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
 
   // 计算每个卡片的宽度类名
   const getColumnClass = () => {
-    switch (parseInt(columns)) {
+    switch (parseInt(String(columns))) {
       case 1: return 'w-full'
       case 2: return 'w-full md:w-1/2'
       case 3: return 'w-full md:w-1/3'
@@ -102,15 +117,15 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
     }
   }
 
-  const handleDragEnd = (event) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
-    if (active.id !== over.id) {
+    if (over && active.id !== over.id) {
       const oldIndex = categories.findIndex((cat) => cat.name === active.id)
       const newIndex = categories.findIndex((cat) => cat.name === over.id)
 
       const newCategories = arrayMove(categories, oldIndex, newIndex)
-      onReorderCategories(newCategories)
+      onReorderCategories?.(newCategories)
     }
   }
 
@@ -147,20 +162,6 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
       </DndContext>
     </div>
   )
-}
-
-ServiceGrid.propTypes = {
-  categories: PropTypes.array.isRequired,
-  columns: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
-  onOpenEditService: PropTypes.func,
-  onOpenAddService: PropTypes.func,
-  onDeleteService: PropTypes.func,
-  onDeleteCategory: PropTypes.func,
-  onOpenEditCategory: PropTypes.func,
-  onReorderCategories: PropTypes.func,
-  onReorderServices: PropTypes.func,
-  isEditMode: PropTypes.bool,
-  serviceStatus: PropTypes.object
 }
 
 export default ServiceGrid 
