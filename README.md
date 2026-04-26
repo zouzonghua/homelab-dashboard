@@ -2,8 +2,6 @@
 
 一个现代化的家庭服务器仪表盘，帮助你更好地管理和监控你的家庭服务器。
 
-## [在线演示](https://zouzonghua.github.io/homelab-dashboard/)
-
 ## 功能特点
 
 - [x] 🎯 一键访问常用服务
@@ -11,10 +9,10 @@
 - [x] 📱 响应式设计，支持移动端
 - [x] 📄 支持导入导出配置
 - [x] 🔧 支持编辑服务
+- [x] 🔄 实时服务状态显示
+- [x] 🐳 Docker 部署
 - [ ] 📊 系统资源监控 (TODO)
-- [ ] 🔄 实时服务状态显示 (TODO)
 - [ ] 🔐 安全的身份验证 (TODO)
-- [ ] 🐳 docker 部署 (TODO)
 
 ## 快速开始
 
@@ -99,10 +97,41 @@ npm --prefix web run build
 ### Docker 部署
 
 ```bash
+# 使用已发布镜像
+docker run -d \
+  --name homelab-dashboard \
+  -p 8080:8080 \
+  -v "$(pwd)/data:/data" \
+  --restart unless-stopped \
+  zouzonghua/homelab-dashboard:latest
+```
+
+也可以使用 compose：
+
+```bash
+docker compose -f deploy/compose.yml up -d
+```
+
+本地验证镜像构建：
+
+```bash
 docker compose -f deploy/compose.yml up --build
 ```
 
 访问 `http://localhost:8080`，SQLite 数据会保存在本地 `data/homelab.db` 中，方便用 DBeaver 等工具查看。
+
+### Docker 镜像发布
+
+GitHub Actions 会在以下场景发布镜像到 Docker Hub：
+
+- 推送到 `main`：发布 `zouzonghua/homelab-dashboard:latest`
+- 推送 `v*.*.*` 标签或发布 GitHub Release：发布对应版本标签
+- 手动触发 `Publish Docker image` workflow
+
+仓库需要配置 Secrets：
+
+- `DOCKER_HUB_USERNAME`
+- `DOCKER_HUB_ACCESS_TOKEN`
 
 ## 测试
 
