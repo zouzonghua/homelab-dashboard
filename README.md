@@ -27,20 +27,23 @@ git clone https://github.com/zouzonghua/homelab-dashboard.git
 # 进入项目目录
 cd homelab-dashboard
 
-# 安装依赖
-npm install
+# 安装前端依赖
+npm --prefix web install
 
-# 启动开发服务器
-npm run dev
+# 启动前端开发服务器
+npm --prefix web run dev
+
+# 另开一个终端启动本地 Go API
+npm --prefix web run dev:api
 
 # 启动 Go API + React 构建产物
-npm run e2e:server
+npm --prefix web run e2e:server
 
 # 构建生产版本
-npm run build
+npm --prefix web run build
 
 # 预览生产构建
-npm run preview
+npm --prefix web run preview
 ```
 
 ## 后端与数据持久化
@@ -49,17 +52,30 @@ npm run preview
 
 - `GET /api/config`：读取仪表盘配置
 - `PUT /api/config`：保存完整配置
-- 默认数据库路径：`/data/homelab.db`
-- 默认静态资源目录：`dist`
+- 默认数据库路径：`data/homelab.db`
+- 默认 seed 配置路径：`web/src/assets/config.json`
+- 默认静态资源目录：`web/dist`
 - 默认端口：`8080`
 
 可通过环境变量覆盖：
 
 ```bash
-HOMELAB_DB_PATH=.tmp/homelab.db HOMELAB_STATIC_DIR=dist PORT=8080 go run ./cmd/server
+HOMELAB_DB_PATH=.tmp/homelab.db HOMELAB_STATIC_DIR=web/dist PORT=8080 go run ./cmd/server
 ```
 
-首次启动时，如果 SQLite 为空，会从 `src/assets/config.json` 导入默认配置。
+首次启动时，如果 SQLite 为空，会从 `web/src/assets/config.json` 导入默认配置。
+
+本地开发不需要 Docker。常规调试方式是两个终端：
+
+```bash
+# 终端 1：Go API，监听 8080
+npm --prefix web run dev:api
+
+# 终端 2：Vite 前端，监听 5173，并把 /api 代理到 8080
+npm --prefix web run dev
+```
+
+访问 `http://localhost:5173`。Docker 主要用于发布打包或验证容器部署。
 
 ## 安装部署
 
@@ -68,18 +84,18 @@ HOMELAB_DB_PATH=.tmp/homelab.db HOMELAB_STATIC_DIR=dist PORT=8080 go run ./cmd/s
 1. 构建项目
 
 ```bash
-npm run build
+npm --prefix web run build
 ```
 
-2. 将 `dist` 目录下的文件部署到你的 Web 服务器
+2. 将 `web/dist` 目录下的文件部署到你的 Web 服务器
 
 ### Docker 部署
 
 ```bash
-docker compose up --build
+docker compose -f deploy/compose.yml up --build
 ```
 
-访问 `http://localhost:8080`，SQLite 数据会保存在 Docker volume `homelab-data` 中。
+访问 `http://localhost:8080`，SQLite 数据会保存在本地 `data/homelab.db` 中，方便用 DBeaver 等工具查看。
 
 ## 测试
 
@@ -88,15 +104,15 @@ docker compose up --build
 go test ./...
 
 # 前端单元测试
-npm test -- src/utils/api.test.jsx
+npm --prefix web test -- src/utils/api.test.jsx
 
 # E2E 测试
-npm run test:e2e
+npm --prefix web run test:e2e
 ```
 
 ## 配置说明
 
-配置文件位于 `src/assets/config.json`，你可以根据需要修改以下配置：
+配置文件位于 `web/src/assets/config.json`，你可以根据需要修改以下配置：
 
 ```javascript
 {

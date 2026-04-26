@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 .tmp
+data
 test-results
 playwright-report
 

@@ -12,19 +12,20 @@ import (
 )
 
 func main() {
-	seed, err := readSeed("src/assets/config.json")
+	seedPath := envOrDefault("HOMELAB_SEED_PATH", "web/src/assets/config.json")
+	seed, err := readSeed(seedPath)
 	if err != nil {
 		log.Fatalf("read seed config: %v", err)
 	}
 
-	st, err := store.Open(envOrDefault("HOMELAB_DB_PATH", "/data/homelab.db"), seed)
+	st, err := store.Open(envOrDefault("HOMELAB_DB_PATH", "data/homelab.db"), seed)
 	if err != nil {
 		log.Fatalf("open database: %v", err)
 	}
 	defer st.Close()
 
 	addr := ":" + envOrDefault("PORT", "8080")
-	staticDir := envOrDefault("HOMELAB_STATIC_DIR", "dist")
+	staticDir := envOrDefault("HOMELAB_STATIC_DIR", "web/dist")
 
 	log.Printf("listening on %s", addr)
 	if err := http.ListenAndServe(addr, api.NewServer(st, staticDir)); err != nil {

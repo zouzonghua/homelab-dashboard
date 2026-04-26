@@ -1,0 +1,14 @@
+.git
+.github
+.tmp
+data
+dist
+node_modules
+test-results
+playwright-report
+web/dist
+web/node_modules
+web/test-results
+web/playwright-report
+*.log
+.DS_Store

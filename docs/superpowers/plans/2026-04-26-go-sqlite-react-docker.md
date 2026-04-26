@@ -4,7 +4,7 @@
 
 **Goal:** Convert the current static React dashboard into a first-version Go + SQLite + React + Docker application with unit tests and e2e coverage.
 
-**Architecture:** Keep the current React UI as the user-facing shell, but move configuration persistence behind a Go REST API. SQLite stores categories and services, seeded from the existing `src/assets/config.json` on first startup. The Go server serves `/api/config` and the built React static files from one Docker image.
+**Architecture:** Keep the current React UI as the user-facing shell, but move configuration persistence behind a Go REST API. SQLite stores categories and services, seeded from the existing `web/src/assets/config.json` on first startup. The Go server serves `/api/config` and the built React static files from one Docker image.
 
 **Tech Stack:** Go 1.26, SQLite via `modernc.org/sqlite`, React 18 + Vite, Vitest + Testing Library, Playwright, Docker multi-stage build.
 
@@ -19,13 +19,13 @@
 - `internal/store/store_test.go`: SQLite unit/integration tests with temp DB files.
 - `internal/api/server.go`: HTTP routes and static file serving.
 - `internal/api/server_test.go`: HTTP tests using `httptest`.
-- `src/utils/api.js`: browser API client for `/api/config`.
-- `src/utils/api.test.jsx`: frontend unit tests for config fetch/save behavior.
-- `src/App.jsx`: save edited config through API while preserving local fallback behavior.
-- `e2e/dashboard.spec.js`: Playwright smoke and persistence test.
-- `playwright.config.js`: e2e config.
+- `web/src/utils/api.js`: browser API client for `/api/config`.
+- `web/src/utils/api.test.jsx`: frontend unit tests for config fetch/save behavior.
+- `web/src/App.jsx`: save edited config through API while preserving local fallback behavior.
+- `web/e2e/dashboard.spec.js`: Playwright smoke and persistence test.
+- `web/playwright.config.js`: e2e config.
 - `Dockerfile`: build React, build Go, run one final image.
-- `docker-compose.yml`: local app + SQLite volume.
+- `deploy/compose.yml`: local app + SQLite volume.
 
 ---
 
@@ -104,11 +104,11 @@ Expected: PASS.
 ## Task 3: Frontend API Client and Save Path
 
 **Files:**
-- Modify: `package.json`
+- Modify: `web/package.json`
 - Modify: `package-lock.json`
-- Modify: `src/utils/api.js`
-- Modify: `src/App.jsx`
-- Test: `src/utils/api.test.jsx`
+- Modify: `web/src/utils/api.js`
+- Modify: `web/src/App.jsx`
+- Test: `web/src/utils/api.test.jsx`
 
 - [ ] **Step 1: Write failing frontend tests**
 
@@ -117,7 +117,7 @@ Test cases:
 - `saveConfig` sends `PUT /api/config` with JSON body.
 - `fetchConfig` falls back to bundled config if API is unavailable.
 
-Run: `npm test -- src/utils/api.test.jsx`
+Run: `npm --prefix web test -- src/utils/api.test.jsx`
 Expected: FAIL because test runner and `saveConfig` are missing.
 
 - [ ] **Step 2: Implement frontend API client**
@@ -130,7 +130,7 @@ When edits happen, save to API first and keep localStorage as fallback/cache. Av
 
 - [ ] **Step 4: Verify frontend unit tests**
 
-Run: `npm test -- src/utils/api.test.jsx`
+Run: `npm --prefix web test -- src/utils/api.test.jsx`
 Expected: PASS.
 
 ---
@@ -139,10 +139,10 @@ Expected: PASS.
 
 **Files:**
 - Create: `Dockerfile`
-- Create: `docker-compose.yml`
-- Create: `playwright.config.js`
-- Test: `e2e/dashboard.spec.js`
-- Modify: `package.json`
+- Create: `deploy/compose.yml`
+- Create: `web/playwright.config.js`
+- Test: `web/e2e/dashboard.spec.js`
+- Modify: `web/package.json`
 - Modify: `package-lock.json`
 - Modify: `README.md`
 
@@ -160,7 +160,7 @@ Expected: FAIL before server/Docker wiring is complete.
 Use multi-stage build:
 - Node stage runs `npm ci && npm run build`.
 - Go stage runs `go test ./... && go build`.
-- Runtime stage includes binary, `dist`, and `/data`.
+- Runtime stage includes binary, `web/dist`, and `/data`.
 
 - [ ] **Step 3: Verify Docker and e2e**
 

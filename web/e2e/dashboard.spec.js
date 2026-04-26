@@ -12,9 +12,16 @@ test('loads dashboard and persists a new service after reload', async ({ page })
   await page.getByLabel('名称').fill('E2E Service')
   await page.getByLabel('Logo 路径').fill('https://example.com/icon.png')
   await page.getByLabel('URL').fill('https://example.com/e2e')
-  await page.getByRole('button', { name: '添加', exact: true }).click()
+  await Promise.all([
+    page.waitForResponse((response) =>
+      response.url().endsWith('/api/config') &&
+      response.request().method() === 'PUT' &&
+      response.ok()
+    ),
+    page.getByRole('button', { name: '添加', exact: true }).click(),
+  ])
 
-  await expect(page.getByText('E2E Service')).toBeVisible()
+  await expect(page.getByRole('button', { name: '访问 E2E Service' })).toBeVisible()
   await page.reload()
-  await expect(page.getByText('E2E Service')).toBeVisible()
+  await expect(page.getByRole('button', { name: '访问 E2E Service' })).toBeVisible()
 })

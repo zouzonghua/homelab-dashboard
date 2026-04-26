@@ -1,11 +1,10 @@
 services:
   homelab-dashboard:
-    build: .
+    build:
+      context: ..
+      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     volumes:
-      - homelab-data:/data
+      - ../data:/data
     restart: unless-stopped
-
-volumes:
-  homelab-data:
