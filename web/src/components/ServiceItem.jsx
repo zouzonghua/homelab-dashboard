@@ -125,7 +125,7 @@ const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProp
 
   return (
     <div
-      className="drive-bay flex items-center p-4 transition duration-300 ease-in-out mb-6 cursor-pointer relative"
+      className="drive-bay flex items-center p-2 transition duration-300 ease-in-out mb-4 cursor-pointer relative"
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       onMouseEnter={() => setIsHovered(true)}
@@ -164,7 +164,7 @@ const ServiceItem = ({ service, onOpenEdit, onDelete, isEditMode, dragHandleProp
           }}
         />
       </span>
-      <p className="drive-bay__name min-w-0 flex-1 font-bold text-lg truncate">{service.name}</p>
+      <p className="drive-bay__name min-w-0 flex-1 font-bold text-base truncate">{service.name}</p>
 
       {/* 编辑按钮 - 仅在编辑模式和悬停时显示 */}
       {isEditMode && isHovered && (

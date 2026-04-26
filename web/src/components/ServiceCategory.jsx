@@ -125,8 +125,8 @@ const ServiceCategory = ({ category, onOpenEditService, onOpenAddService, onDele
   };
 
   return (
-    <div className={`rack-section flex flex-col w-full p-3`}>
-      <h2 className="rack-section__header group-title truncate text-2xl mt-6 mb-5 flex items-center justify-between">
+    <div className={`rack-section flex flex-col w-full p-2`}>
+      <h2 className="rack-section__header group-title truncate text-2xl mt-2 mb-4 flex items-center justify-between">
         <span className="rack-section__label flex items-center">
           {/* 分类图标 - 编辑模式下可拖拽 */}
           <span

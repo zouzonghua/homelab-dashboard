@@ -41,7 +41,7 @@ const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService,
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col ${columnClass} mb-4`}
+      className={`flex flex-col ${columnClass}`}
     >
       <ServiceCategory
         category={category}
@@ -115,7 +115,7 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
   }
 
   return (
-    <div className="chassis-rack container max-w-screen-xl p-2 xl:p-0 xl:mt-6">
+    <div className="chassis-rack container max-w-screen-xl p-2 xl:p-0 xl:mt-4">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -125,7 +125,7 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
           items={categories.map((cat) => cat.name)}
           strategy={rectSortingStrategy}
         >
-          <ul className="flex flex-wrap">
+          <ul className="flex flex-wrap p-2">
             {categories.map((category, index) => (
               <SortableCategoryItem
                 key={category.name}
