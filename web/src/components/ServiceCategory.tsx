@@ -22,10 +22,16 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { Category, DragHandleProps, Service, ServiceStatus, ServiceStatusMap } from '../types'
+import type {
+  CategoryWithServices,
+  DragHandleProps,
+  ServiceStatus,
+  ServiceStatusMap,
+  ServiceViewModel,
+} from '../types'
 
 type SortableServiceItemProps = {
-  service: Service
+  service: ServiceViewModel
   index: number
   onOpenEdit?: () => void
   onDelete?: () => void
@@ -34,19 +40,19 @@ type SortableServiceItemProps = {
 }
 
 type ServiceCategoryProps = {
-  category: Category
-  onOpenEditService?: (service: Service, serviceIndex: number) => void
+  category: CategoryWithServices
+  onOpenEditService?: (service: ServiceViewModel, serviceIndex: number) => void
   onOpenAddService?: () => void
   onDeleteService?: (serviceIndex: number) => void
   onDeleteCategory?: () => void
   onEditCategory?: () => void
-  onReorderServices?: (services: Service[]) => void
+  onReorderServices?: (services: ServiceViewModel[]) => void
   isEditMode?: boolean
   dragHandleProps?: DragHandleProps
   serviceStatus?: ServiceStatusMap
 }
 
-const getServiceSortableId = (service: Service, index: number) =>
+const getServiceSortableId = (service: ServiceViewModel, index: number) =>
   service.id != null ? String(service.id) : `${service.name}${index}`
 
 // 可排序的服务项组件

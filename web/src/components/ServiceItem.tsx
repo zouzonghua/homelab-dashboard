@@ -1,10 +1,10 @@
 import { useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
-import type { DragHandleProps, Service, ServiceStatus } from '../types'
+import type { DragHandleProps, ServiceStatus, ServiceViewModel } from '../types'
 
 type ServiceItemProps = {
-  service: Service
+  service: ServiceViewModel
   onOpenEdit?: () => void
   onDelete?: () => void
   isEditMode?: boolean
@@ -33,7 +33,7 @@ const getStableHash = (value?: string) =>
     return nextHash >>> 0
   }, 0)
 
-const getFallbackColor = (service: Service) => {
+const getFallbackColor = (service: ServiceViewModel) => {
   const seed = getStableHash(`${service.name}:${service.url}`)
   const hue = seed % 360
   const saturation = 62 + (seed % 18)
@@ -41,7 +41,7 @@ const getFallbackColor = (service: Service) => {
   return `hsl(${hue} ${saturation}% ${lightness}%)`
 }
 
-const getStatusSeed = (service: Service, key: string) =>
+const getStatusSeed = (service: ServiceViewModel, key: string) =>
   getStableHash(`${service.name}:${service.url}:${key}`)
 
 const escapeSVGText = (value: string) =>

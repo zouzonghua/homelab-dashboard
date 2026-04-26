@@ -3,9 +3,10 @@
  */
 
 import { dashboardApi, fetchDashboardConfig } from '../api'
-import type { DashboardConfig } from '../api/contract'
+import type { ImportConfigData } from '../api/contract'
 
 const DEFAULT_EXPORT_FILENAME = 'homelab-dashboard-config.json'
+type ImportConfigRequest = ImportConfigData['body']
 
 const readFileAsText = async (file: File) => {
   if (typeof file.text === 'function') {
@@ -43,10 +44,10 @@ export const exportConfig = async () => {
  * 导入配置文件到服务端 SQLite，并返回刷新后的 API 配置
  */
 export const importConfig = async (file: File) => {
-  let config: DashboardConfig
+  let config: ImportConfigRequest
 
   try {
-    config = JSON.parse(await readFileAsText(file)) as DashboardConfig
+    config = JSON.parse(await readFileAsText(file)) as ImportConfigRequest
   } catch {
     throw new Error('配置文件格式无效')
   }

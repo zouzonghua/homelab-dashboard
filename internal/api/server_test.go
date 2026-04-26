@@ -161,15 +161,18 @@ func TestV1CategoryAndServiceCRUD(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("GET services status = %d, want %d", rec.Code, http.StatusOK)
 	}
-	var services []struct {
+	var services listResponse[struct {
 		ID             int64  `json:"id"`
 		Name           string `json:"name"`
 		MonitorEnabled bool   `json:"monitorEnabled"`
-	}
+	}]
 	if err := json.NewDecoder(rec.Body).Decode(&services); err != nil {
 		t.Fatalf("decode services: %v", err)
 	}
-	if !containsService(services, serviceID, "Metrics", false) {
+	if services.Pagination.Total < 2 || services.Pagination.Limit != 100 || services.Pagination.Offset != 0 {
+		t.Fatalf("services pagination = %#v", services.Pagination)
+	}
+	if !containsService(services.Data, serviceID, "Metrics", false) {
 		t.Fatalf("services did not include patched service: %#v", services)
 	}
 
@@ -185,6 +188,66 @@ func TestV1CategoryAndServiceCRUD(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNoContent {
 		t.Fatalf("DELETE category status = %d, want %d", rec.Code, http.StatusNoContent)
+	}
+}
+
+func TestGetV1ServicesFiltersByCategoryID(t *testing.T) {
+	handler, cleanup := newTestHandler(t, apiSampleConfig("service filter"))
+	defer cleanup()
+
+	appsID := createCategoryViaAPI(t, handler, "Apps")
+	infraID := createCategoryViaAPI(t, handler, "Infra")
+	appServiceID := createServiceViaAPI(t, handler, appsID, "Grafana")
+	_ = createServiceViaAPI(t, handler, infraID, "Router")
+
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/services?categoryId=%d&limit=1&offset=0", appsID), nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET filtered services status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var services listResponse[struct {
+		ID         int64 `json:"id"`
+		CategoryID int64 `json:"categoryId"`
+	}]
+	if err := json.NewDecoder(rec.Body).Decode(&services); err != nil {
+		t.Fatalf("decode filtered services: %v", err)
+	}
+	if len(services.Data) != 1 || services.Data[0].ID != appServiceID || services.Data[0].CategoryID != appsID {
+		t.Fatalf("filtered services = %#v, want only service %d in category %d", services, appServiceID, appsID)
+	}
+	if services.Pagination.Limit != 1 || services.Pagination.Offset != 0 || services.Pagination.Total != 1 || services.Pagination.HasMore {
+		t.Fatalf("filtered services pagination = %#v", services.Pagination)
+	}
+}
+
+func TestGetV1CategoriesReturnsPaginatedEnvelope(t *testing.T) {
+	handler, cleanup := newTestHandler(t, apiSampleConfig("category pagination"))
+	defer cleanup()
+
+	_ = createCategoryViaAPI(t, handler, "Apps")
+	_ = createCategoryViaAPI(t, handler, "Infra")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/categories?limit=1&offset=1", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET categories status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var categories listResponse[struct {
+		ID   int64  `json:"id"`
+		Name string `json:"name"`
+	}]
+	if err := json.NewDecoder(rec.Body).Decode(&categories); err != nil {
+		t.Fatalf("decode categories: %v", err)
+	}
+	if len(categories.Data) != 1 || categories.Data[0].Name != "Apps" {
+		t.Fatalf("categories page = %#v", categories.Data)
+	}
+	if categories.Pagination.Limit != 1 || categories.Pagination.Offset != 1 || categories.Pagination.Total != 3 || !categories.Pagination.HasMore {
+		t.Fatalf("categories pagination = %#v", categories.Pagination)
 	}
 }
 
@@ -380,6 +443,114 @@ func TestGetV1ServiceIconFallsBackToGeneratedSVG(t *testing.T) {
 	}
 }
 
+func TestV1MutationsWriteAuditLogs(t *testing.T) {
+	handler, cleanup := newTestHandler(t, apiSampleConfig("audit api"))
+	defer cleanup()
+
+	categoryID := createCategoryViaAPI(t, handler, "Apps")
+	serviceID := createServiceViaAPI(t, handler, categoryID, "Grafana")
+
+	req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/api/v1/services/%d", serviceID), strings.NewReader(`{"name":"Metrics"}`))
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("PATCH service status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/audit-logs?limit=10", nil)
+	rec = httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET audit logs status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var logs listResponse[struct {
+		Action       string `json:"action"`
+		ResourceType string `json:"resourceType"`
+		ResourceID   string `json:"resourceId"`
+		Summary      string `json:"summary"`
+		Before       struct {
+			Name string `json:"name"`
+		} `json:"before"`
+		After struct {
+			Name string `json:"name"`
+		} `json:"after"`
+	}]
+	if err := json.NewDecoder(rec.Body).Decode(&logs); err != nil {
+		t.Fatalf("decode audit logs: %v", err)
+	}
+	if len(logs.Data) < 3 {
+		t.Fatalf("logs length = %d, want at least 3: %#v", len(logs.Data), logs)
+	}
+	if logs.Pagination.Limit != 10 || logs.Pagination.Offset != 0 || logs.Pagination.Total < 3 || logs.Pagination.HasMore {
+		t.Fatalf("audit logs pagination = %#v", logs.Pagination)
+	}
+	if logs.Data[0].Action != "service.update" || logs.Data[0].ResourceType != "service" || logs.Data[0].ResourceID != fmt.Sprint(serviceID) {
+		t.Fatalf("latest audit log = %#v", logs.Data[0])
+	}
+	if logs.Data[0].Before.Name != "Grafana" || logs.Data[0].After.Name != "Metrics" {
+		t.Fatalf("update audit snapshots = before %#v after %#v", logs.Data[0].Before, logs.Data[0].After)
+	}
+}
+
+func TestGetV1AuditLogsSupportsFilters(t *testing.T) {
+	handler, cleanup := newTestHandler(t, apiSampleConfig("audit filters"))
+	defer cleanup()
+
+	categoryID := createCategoryViaAPI(t, handler, "Apps")
+	_ = createServiceViaAPI(t, handler, categoryID, "Grafana")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/audit-logs?resourceType=category&limit=1", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET filtered audit logs status = %d, want %d", rec.Code, http.StatusOK)
+	}
+
+	var logs listResponse[struct {
+		Action       string `json:"action"`
+		ResourceType string `json:"resourceType"`
+	}]
+	if err := json.NewDecoder(rec.Body).Decode(&logs); err != nil {
+		t.Fatalf("decode filtered audit logs: %v", err)
+	}
+	if len(logs.Data) != 1 || logs.Data[0].ResourceType != "category" {
+		t.Fatalf("filtered logs = %#v", logs)
+	}
+	if logs.Pagination.Limit != 1 || logs.Pagination.Offset != 0 || logs.Pagination.Total != 1 || logs.Pagination.HasMore {
+		t.Fatalf("filtered audit logs pagination = %#v", logs.Pagination)
+	}
+}
+
+func TestGetV1AuditLogsPaginates(t *testing.T) {
+	handler, cleanup := newTestHandler(t, apiSampleConfig("audit pagination"))
+	defer cleanup()
+
+	categoryID := createCategoryViaAPI(t, handler, "Apps")
+	_ = createServiceViaAPI(t, handler, categoryID, "Grafana")
+	_ = createServiceViaAPI(t, handler, categoryID, "Prometheus")
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/audit-logs?limit=1&offset=1", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET paginated audit logs status = %d, want %d, body = %s", rec.Code, http.StatusOK, rec.Body.String())
+	}
+
+	var logs listResponse[struct {
+		Action string `json:"action"`
+	}]
+	if err := json.NewDecoder(rec.Body).Decode(&logs); err != nil {
+		t.Fatalf("decode paginated audit logs: %v", err)
+	}
+	if len(logs.Data) != 1 || logs.Data[0].Action != "service.create" {
+		t.Fatalf("audit log page = %#v", logs.Data)
+	}
+	if logs.Pagination.Limit != 1 || logs.Pagination.Offset != 1 || logs.Pagination.Total != 3 || !logs.Pagination.HasMore {
+		t.Fatalf("audit log pagination = %#v", logs.Pagination)
+	}
+}
+
 func TestGetOpenAPIContract(t *testing.T) {
 	handler, cleanup := newTestHandler(t, apiSampleConfig("contract"))
 	defer cleanup()
@@ -491,16 +662,28 @@ func firstServiceID(t *testing.T, handler http.Handler) int64 {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("GET services status = %d, want %d", rec.Code, http.StatusOK)
 	}
-	var services []struct {
+	var services listResponse[struct {
 		ID int64 `json:"id"`
-	}
+	}]
 	if err := json.NewDecoder(rec.Body).Decode(&services); err != nil {
 		t.Fatalf("decode services: %v", err)
 	}
-	if len(services) == 0 {
+	if len(services.Data) == 0 {
 		t.Fatal("expected at least one service")
 	}
-	return services[0].ID
+	return services.Data[0].ID
+}
+
+type listResponse[T any] struct {
+	Data       []T        `json:"data"`
+	Pagination pagination `json:"pagination"`
+}
+
+type pagination struct {
+	Limit   int  `json:"limit"`
+	Offset  int  `json:"offset"`
+	Total   int  `json:"total"`
+	HasMore bool `json:"hasMore"`
 }
 
 func containsService(services []struct {

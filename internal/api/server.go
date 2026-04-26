@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"mime"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -63,6 +64,13 @@ func NewServer(st *store.Store, staticDir string) http.Handler {
 			return
 		}
 		importConfig(w, r, st)
+	})
+	mux.HandleFunc("/api/v1/audit-logs", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", nil)
+			return
+		}
+		listAuditLogs(w, r, st)
 	})
 	mux.HandleFunc("/api/v1/categories", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -208,6 +216,7 @@ func exportConfig(w http.ResponseWriter, r *http.Request, st *store.Store) {
 }
 
 func importConfig(w http.ResponseWriter, r *http.Request, st *store.Store) {
+	before, _ := st.LoadConfig(r.Context())
 	var cfg config.Config
 	if !decodeRequest(w, r, &cfg) {
 		return
@@ -221,16 +230,55 @@ func importConfig(w http.ResponseWriter, r *http.Request, st *store.Store) {
 		writeError(w, http.StatusInternalServerError, "internal_error", "load imported config", nil)
 		return
 	}
+	writeAuditLog(r, st, config.AuditLogCreate{
+		Action:       "config.import",
+		ResourceType: "config",
+		ResourceID:   "1",
+		Summary:      "导入仪表盘配置",
+		BeforeJSON:   mustJSON(before),
+		AfterJSON:    mustJSON(imported),
+	})
 	writeJSON(w, imported)
 }
 
+func listAuditLogs(w http.ResponseWriter, r *http.Request, st *store.Store) {
+	limit, offset := parsePagination(r, 50, 200)
+	query := config.AuditLogQuery{
+		Action:       strings.TrimSpace(r.URL.Query().Get("action")),
+		ResourceType: strings.TrimSpace(r.URL.Query().Get("resourceType")),
+		ResourceID:   strings.TrimSpace(r.URL.Query().Get("resourceId")),
+		Limit:        limit,
+		Offset:       offset,
+	}
+	total, err := st.CountAuditLogs(r.Context(), query)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "count audit logs", nil)
+		return
+	}
+	logs, err := st.ListAuditLogs(r.Context(), query)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "load audit logs", nil)
+		return
+	}
+	writeJSON(w, config.AuditLogListResponse{
+		Data:       logs,
+		Pagination: newPagination(limit, offset, total, len(logs)),
+	})
+}
+
 func listCategories(w http.ResponseWriter, r *http.Request, st *store.Store) {
+	limit, offset := parsePagination(r, 100, 200)
 	categories, err := st.ListCategories(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "load categories", nil)
 		return
 	}
-	writeJSON(w, categories)
+	total := len(categories)
+	categories = pageSlice(categories, limit, offset)
+	writeJSON(w, config.CategoryListResponse{
+		Data:       categories,
+		Pagination: newPagination(limit, offset, total, len(categories)),
+	})
 }
 
 func getCategory(w http.ResponseWriter, r *http.Request, st *store.Store, id int64) {
@@ -252,10 +300,22 @@ func createCategory(w http.ResponseWriter, r *http.Request, st *store.Store) {
 		writeError(w, http.StatusInternalServerError, "internal_error", "create category", nil)
 		return
 	}
+	writeAuditLog(r, st, config.AuditLogCreate{
+		Action:       "category.create",
+		ResourceType: "category",
+		ResourceID:   strconv.FormatInt(created.ID, 10),
+		Summary:      fmt.Sprintf("创建分类 %s", created.Name),
+		AfterJSON:    mustJSON(created),
+	})
 	writeJSONStatus(w, http.StatusCreated, created)
 }
 
 func updateCategory(w http.ResponseWriter, r *http.Request, st *store.Store, id int64) {
+	before, beforeErr := st.GetCategory(r.Context(), id)
+	if beforeErr != nil {
+		writeStoreError(w, beforeErr)
+		return
+	}
 	var patch config.CategoryResourcePatch
 	if !decodeRequest(w, r, &patch) {
 		return
@@ -265,24 +325,65 @@ func updateCategory(w http.ResponseWriter, r *http.Request, st *store.Store, id 
 		return
 	}
 	updated, err := st.UpdateCategory(r.Context(), id, patch)
+	if err == nil {
+		writeAuditLog(r, st, config.AuditLogCreate{
+			Action:       "category.update",
+			ResourceType: "category",
+			ResourceID:   strconv.FormatInt(id, 10),
+			Summary:      fmt.Sprintf("更新分类 %s", updated.Name),
+			BeforeJSON:   mustJSON(before),
+			AfterJSON:    mustJSON(updated),
+		})
+	}
 	writeResourceResult(w, updated, err)
 }
 
 func deleteCategory(w http.ResponseWriter, r *http.Request, st *store.Store, id int64) {
+	before, beforeErr := st.GetCategory(r.Context(), id)
+	if beforeErr != nil {
+		writeStoreError(w, beforeErr)
+		return
+	}
 	if err := st.DeleteCategory(r.Context(), id); err != nil {
 		writeStoreError(w, err)
 		return
 	}
+	writeAuditLog(r, st, config.AuditLogCreate{
+		Action:       "category.delete",
+		ResourceType: "category",
+		ResourceID:   strconv.FormatInt(id, 10),
+		Summary:      fmt.Sprintf("删除分类 %s", before.Name),
+		BeforeJSON:   mustJSON(before),
+	})
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func listServices(w http.ResponseWriter, r *http.Request, st *store.Store) {
-	services, err := st.ListServices(r.Context())
+	limit, offset := parsePagination(r, 100, 200)
+	var (
+		services []config.ServiceResource
+		err      error
+	)
+	if rawCategoryID := strings.TrimSpace(r.URL.Query().Get("categoryId")); rawCategoryID != "" {
+		categoryID, parseErr := strconv.ParseInt(rawCategoryID, 10, 64)
+		if parseErr != nil || categoryID <= 0 {
+			writeError(w, http.StatusBadRequest, "invalid_query", "invalid categoryId", nil)
+			return
+		}
+		services, err = st.ListServicesByCategory(r.Context(), categoryID)
+	} else {
+		services, err = st.ListServices(r.Context())
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "load services", nil)
 		return
 	}
-	writeJSON(w, services)
+	total := len(services)
+	services = pageSlice(services, limit, offset)
+	writeJSON(w, config.ServiceListResponse{
+		Data:       services,
+		Pagination: newPagination(limit, offset, total, len(services)),
+	})
 }
 
 func getService(w http.ResponseWriter, r *http.Request, st *store.Store, id int64) {
@@ -313,10 +414,22 @@ func createService(w http.ResponseWriter, r *http.Request, st *store.Store) {
 		writeStoreError(w, err)
 		return
 	}
+	writeAuditLog(r, st, config.AuditLogCreate{
+		Action:       "service.create",
+		ResourceType: "service",
+		ResourceID:   strconv.FormatInt(created.ID, 10),
+		Summary:      fmt.Sprintf("创建服务 %s", created.Name),
+		AfterJSON:    mustJSON(created),
+	})
 	writeJSONStatus(w, http.StatusCreated, created)
 }
 
 func updateService(w http.ResponseWriter, r *http.Request, st *store.Store, id int64) {
+	before, beforeErr := st.GetService(r.Context(), id)
+	if beforeErr != nil {
+		writeStoreError(w, beforeErr)
+		return
+	}
 	var patch config.ServiceResourcePatch
 	if !decodeRequest(w, r, &patch) {
 		return
@@ -326,19 +439,41 @@ func updateService(w http.ResponseWriter, r *http.Request, st *store.Store, id i
 		return
 	}
 	updated, err := st.UpdateService(r.Context(), id, patch)
+	if err == nil {
+		writeAuditLog(r, st, config.AuditLogCreate{
+			Action:       "service.update",
+			ResourceType: "service",
+			ResourceID:   strconv.FormatInt(id, 10),
+			Summary:      fmt.Sprintf("更新服务 %s", updated.Name),
+			BeforeJSON:   mustJSON(before),
+			AfterJSON:    mustJSON(updated),
+		})
+	}
 	writeResourceResult(w, updated, err)
 }
 
 func deleteService(w http.ResponseWriter, r *http.Request, st *store.Store, id int64) {
+	before, beforeErr := st.GetService(r.Context(), id)
+	if beforeErr != nil {
+		writeStoreError(w, beforeErr)
+		return
+	}
 	if err := st.DeleteService(r.Context(), id); err != nil {
 		writeStoreError(w, err)
 		return
 	}
+	writeAuditLog(r, st, config.AuditLogCreate{
+		Action:       "service.delete",
+		ResourceType: "service",
+		ResourceID:   strconv.FormatInt(id, 10),
+		Summary:      fmt.Sprintf("删除服务 %s", before.Name),
+		BeforeJSON:   mustJSON(before),
+	})
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func getV1Status(w http.ResponseWriter, r *http.Request, st *store.Store) {
-	results, err := loadV1StatusResults(r.Context(), st, os.Getenv("HOMELAB_DEBUG_STATUS") == "1")
+	results, err := loadV1StatusResults(r.Context(), st)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "load status", nil)
 		return
@@ -358,9 +493,8 @@ func getV1StatusStream(w http.ResponseWriter, r *http.Request, st *store.Store) 
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
 
-	debug := os.Getenv("HOMELAB_DEBUG_STATUS") == "1"
 	writeSnapshot := func() bool {
-		results, err := loadV1StatusResults(r.Context(), st, debug)
+		results, err := loadV1StatusResults(r.Context(), st)
 		if err != nil {
 			log.Printf("[status] v1 stream load failed: %v", err)
 			return false
@@ -391,7 +525,7 @@ func getV1StatusStream(w http.ResponseWriter, r *http.Request, st *store.Store) 
 	}
 }
 
-func loadV1StatusResults(ctx context.Context, st *store.Store, debug bool) (map[string]monitor.Result, error) {
+func loadV1StatusResults(ctx context.Context, st *store.Store) (map[string]monitor.Result, error) {
 	services, err := st.ListServices(ctx)
 	if err != nil {
 		return nil, err
@@ -399,14 +533,8 @@ func loadV1StatusResults(ctx context.Context, st *store.Store, debug bool) (map[
 
 	checker := monitor.NewChecker(3 * time.Second)
 	results := map[string]monitor.Result{}
-	if debug {
-		log.Printf("[status] checking v1 services")
-	}
 	for _, service := range services {
 		if !service.MonitorEnabled {
-			if debug {
-				log.Printf("[status] skip id=%d name=%q enabled=false url=%q", service.ID, service.Name, service.URL)
-			}
 			continue
 		}
 		monitorURL := service.MonitorURL
@@ -415,18 +543,6 @@ func loadV1StatusResults(ctx context.Context, st *store.Store, debug bool) (map[
 		}
 		result := checker.Check(ctx, service.Name, monitorURL)
 		results[strconv.FormatInt(service.ID, 10)] = result
-		if debug {
-			log.Printf(
-				"[status] id=%d name=%q target=%q status=%s code=%d duration_ms=%d error=%q",
-				service.ID,
-				service.Name,
-				monitorURL,
-				result.Status,
-				result.Code,
-				result.ResponseTimeMs,
-				result.Error,
-			)
-		}
 	}
 	return results, nil
 }
@@ -536,6 +652,84 @@ func parseIDFromPath(w http.ResponseWriter, path string, prefix string) (int64, 
 		return 0, false
 	}
 	return id, true
+}
+
+func parseQueryInt(r *http.Request, name string, fallback int) int {
+	raw := strings.TrimSpace(r.URL.Query().Get(name))
+	if raw == "" {
+		return fallback
+	}
+	value, err := strconv.Atoi(raw)
+	if err != nil {
+		return fallback
+	}
+	return value
+}
+
+func parsePagination(r *http.Request, defaultLimit int, maxLimit int) (int, int) {
+	limit := parseQueryInt(r, "limit", defaultLimit)
+	if limit <= 0 {
+		limit = defaultLimit
+	}
+	if limit > maxLimit {
+		limit = maxLimit
+	}
+	offset := parseQueryInt(r, "offset", 0)
+	if offset < 0 {
+		offset = 0
+	}
+	return limit, offset
+}
+
+func newPagination(limit int, offset int, total int, pageSize int) config.Pagination {
+	return config.Pagination{
+		Limit:   limit,
+		Offset:  offset,
+		Total:   total,
+		HasMore: offset+pageSize < total,
+	}
+}
+
+func pageSlice[T any](items []T, limit int, offset int) []T {
+	if offset >= len(items) {
+		return []T{}
+	}
+	end := offset + limit
+	if end > len(items) {
+		end = len(items)
+	}
+	return items[offset:end]
+}
+
+func writeAuditLog(r *http.Request, st *store.Store, entry config.AuditLogCreate) {
+	entry.RequestID = r.Header.Get("X-Request-Id")
+	entry.UserAgent = r.UserAgent()
+	entry.IPAddress = clientIP(r)
+	if _, err := st.CreateAuditLog(r.Context(), entry); err != nil {
+		log.Printf("[audit] write failed action=%q resource=%q id=%q: %v", entry.Action, entry.ResourceType, entry.ResourceID, err)
+	}
+}
+
+func clientIP(r *http.Request) string {
+	if forwarded := strings.TrimSpace(r.Header.Get("X-Forwarded-For")); forwarded != "" {
+		return strings.TrimSpace(strings.Split(forwarded, ",")[0])
+	}
+	if realIP := strings.TrimSpace(r.Header.Get("X-Real-IP")); realIP != "" {
+		return realIP
+	}
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
+}
+
+func mustJSON(value any) string {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
 func validateCategory(category config.CategoryResource) map[string]string {

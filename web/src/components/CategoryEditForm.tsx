@@ -2,9 +2,9 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
 import IconPicker from './IconPicker'
-import type { BivariantCallback, Category } from '../types'
+import type { BivariantCallback, CategoryWithServices } from '../types'
 
-type CategoryEditData = Pick<Category, 'name' | 'icon'>
+type CategoryEditData = Pick<CategoryWithServices, 'name' | 'icon'>
 
 type CategoryEditFormProps = {
   category: CategoryEditData

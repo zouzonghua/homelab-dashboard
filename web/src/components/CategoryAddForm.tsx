@@ -2,10 +2,10 @@ import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
 import IconPicker from './IconPicker'
-import type { BivariantCallback, Category } from '../types'
+import type { BivariantCallback, CategoryWithServices } from '../types'
 
 type CategoryAddFormProps = {
-  onAdd: BivariantCallback<[Category]>
+  onAdd: BivariantCallback<[CategoryWithServices]>
   onCancel: () => void
 }
 

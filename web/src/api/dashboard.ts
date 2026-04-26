@@ -1,46 +1,46 @@
 import type {
-  Category as UiCategory,
-  DashboardConfig as UiDashboardConfig,
-  Service as UiService,
-  ServiceId as UiServiceId,
-  ServiceStatusMap as UiServiceStatusMap,
+  CategoryWithServices,
+  DashboardViewModel,
+  ServiceId,
+  ServiceViewModel,
+  ServiceStatusMap,
 } from '../types'
 import type {
-  Category as ApiCategory,
+  Category,
   CategoryCreateRequest,
+  CategoryListResponse,
   CategoryUpdateRequest,
-  DashboardConfig as ApiDashboardConfig,
   GetDashboardResponse,
   GetStatusResponse,
-  ListCategoriesResponse,
-  ListServicesResponse,
-  Service as ApiService,
+  ImportConfigData,
+  AuditLogListResponse,
+  Service,
+  ServiceListResponse,
   ServiceCreateRequest,
   ServiceUpdateRequest,
 } from './contract'
 import { apiClient } from './http'
 
 type DashboardSettings = GetDashboardResponse
-type CategoryResource = ListCategoriesResponse[number]
-type ServiceResource = ListServicesResponse[number]
-type ApiServiceStatusMap = GetStatusResponse
-type ServiceStatusMap = UiServiceStatusMap
+type CategoryResource = CategoryListResponse['data'][number]
+type ServiceResource = ServiceListResponse['data'][number]
 type ServiceTarget = NonNullable<ServiceCreateRequest['target']>
+type ImportConfigRequest = ImportConfigData['body']
 
 const sortByOrder = <T extends { sortOrder?: number; order?: number }>(items: T[]) =>
   [...items].sort((left, right) => (left.sortOrder ?? left.order ?? 0) - (right.sortOrder ?? right.order ?? 0))
 
-const toUiService = (service: ServiceResource): UiService => ({
+const toServiceViewModel = (service: ServiceResource): ServiceViewModel => ({
   ...service,
   logo: service.logo,
   url: service.url,
 })
 
-const toNumberId = (id: UiServiceId) => Number(id)
-const toServiceTarget = (target: UiService['target']): ServiceTarget =>
+const toNumberId = (id: ServiceId) => Number(id)
+const toServiceTarget = (target: ServiceViewModel['target']): ServiceTarget =>
   target === '_self' ? '_self' : '_blank'
 
-const toServicePayload = (service: UiService): ServiceUpdateRequest => {
+const toServicePayload = (service: ServiceViewModel): ServiceUpdateRequest => {
   return {
     categoryId: service.categoryId == null ? undefined : toNumberId(service.categoryId),
     order: service.order,
@@ -55,23 +55,29 @@ const toServicePayload = (service: UiService): ServiceUpdateRequest => {
 
 export const dashboardApi = {
   getSettings: () => apiClient.get<DashboardSettings>('/api/v1/dashboard'),
-  listCategories: () => apiClient.get<CategoryResource[]>('/api/v1/categories'),
-  listServices: () => apiClient.get<ServiceResource[]>('/api/v1/services'),
-  createCategory: (category: UiCategory) =>
-    apiClient.post<ApiCategory>('/api/v1/categories', {
+  listCategories: async () => {
+    const response = await apiClient.get<CategoryListResponse>('/api/v1/categories')
+    return response.data
+  },
+  listServices: async () => {
+    const response = await apiClient.get<ServiceListResponse>('/api/v1/services')
+    return response.data
+  },
+  createCategory: (category: CategoryWithServices) =>
+    apiClient.post<Category>('/api/v1/categories', {
       name: category.name,
       icon: category.icon ?? 'fa-solid fa-folder',
     } satisfies CategoryCreateRequest),
-  updateCategory: (category: UiCategory) =>
-    apiClient.patch<ApiCategory>(`/api/v1/categories/${encodeURIComponent(String(category.id))}`, {
+  updateCategory: (category: CategoryWithServices) =>
+    apiClient.patch<Category>(`/api/v1/categories/${encodeURIComponent(String(category.id))}`, {
       name: category.name,
       icon: category.icon,
       order: category.order,
     } satisfies CategoryUpdateRequest),
-  deleteCategory: (category: UiCategory) =>
+  deleteCategory: (category: CategoryWithServices) =>
     apiClient.delete<null>(`/api/v1/categories/${encodeURIComponent(String(category.id))}`),
-  createService: (categoryId: UiServiceId, service: UiService) =>
-    apiClient.post<ApiService>('/api/v1/services', {
+  createService: (categoryId: ServiceId, service: ServiceViewModel) =>
+    apiClient.post<Service>('/api/v1/services', {
       categoryId: toNumberId(categoryId),
       name: service.name,
       logo: service.logo ?? service.logoUrl ?? '',
@@ -80,27 +86,31 @@ export const dashboardApi = {
       monitorUrl: service.monitorUrl,
       monitorEnabled: service.monitorEnabled,
     } satisfies ServiceCreateRequest),
-  updateService: (service: UiService) =>
-    apiClient.patch<ApiService>(`/api/v1/services/${encodeURIComponent(String(service.id))}`, toServicePayload(service)),
-  deleteService: (service: UiService) =>
+  updateService: (service: ServiceViewModel) =>
+    apiClient.patch<Service>(`/api/v1/services/${encodeURIComponent(String(service.id))}`, toServicePayload(service)),
+  deleteService: (service: ServiceViewModel) =>
     apiClient.delete<null>(`/api/v1/services/${encodeURIComponent(String(service.id))}`),
-  getStatus: () => apiClient.get<ApiServiceStatusMap>('/api/v1/status'),
+  getStatus: () => apiClient.get<GetStatusResponse>('/api/v1/status'),
+  listAuditLogs: async () => {
+    const response = await apiClient.get<AuditLogListResponse>('/api/v1/audit-logs?limit=50')
+    return response.data
+  },
   exportConfig: () => apiClient.blob({ url: '/api/v1/export', method: 'GET' }),
-  importConfig: (config: ApiDashboardConfig) =>
-    apiClient.put<ApiDashboardConfig>('/api/v1/import', config),
+  importConfig: (config: ImportConfigRequest) =>
+    apiClient.put('/api/v1/import', config),
 }
 
 export type SaveConfigOptions =
-  | { action: 'createCategory'; category: UiCategory }
-  | { action: 'updateCategory'; category: UiCategory }
-  | { action: 'deleteCategory'; category: UiCategory }
-  | { action: 'reorderCategories'; categories: UiCategory[] }
-  | { action: 'createService'; categoryId: UiServiceId; service: UiService }
-  | { action: 'updateService'; service: UiService }
-  | { action: 'deleteService'; service: UiService }
-  | { action: 'reorderServices'; services: UiService[] }
+  | { action: 'createCategory'; category: CategoryWithServices }
+  | { action: 'updateCategory'; category: CategoryWithServices }
+  | { action: 'deleteCategory'; category: CategoryWithServices }
+  | { action: 'reorderCategories'; categories: CategoryWithServices[] }
+  | { action: 'createService'; categoryId: ServiceId; service: ServiceViewModel }
+  | { action: 'updateService'; service: ServiceViewModel }
+  | { action: 'deleteService'; service: ServiceViewModel }
+  | { action: 'reorderServices'; services: ServiceViewModel[] }
 
-export const fetchDashboardConfig = async (): Promise<UiDashboardConfig> => {
+export const fetchDashboardConfig = async (): Promise<DashboardViewModel> => {
   const [dashboard, categories, services]: [DashboardSettings, CategoryResource[], ServiceResource[]] = await Promise.all([
     dashboardApi.getSettings(),
     dashboardApi.listCategories(),
@@ -110,12 +120,12 @@ export const fetchDashboardConfig = async (): Promise<UiDashboardConfig> => {
   return {
     ...dashboard,
     columns: String(dashboard.columns ?? 4),
-    items: sortByOrder(categories).map((category): UiCategory => {
+    items: sortByOrder(categories).map((category): CategoryWithServices => {
       return {
         ...category,
         list: sortByOrder(
           services.filter((service) => service.categoryId === category.id)
-        ).map(toUiService),
+        ).map(toServiceViewModel),
       }
     }),
   }

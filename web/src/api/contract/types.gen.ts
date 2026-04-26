@@ -4,7 +4,7 @@ export type ClientOptions = {
     baseUrl: 'http://localhost:8080' | (string & {});
 };
 
-export type DashboardConfig = {
+export type ImportConfigRequest = {
     /**
      * Optional seed/export date string.
      */
@@ -15,6 +15,41 @@ export type DashboardConfig = {
      */
     columns: string;
     items: Array<ConfigCategory>;
+};
+
+export type ExportConfigResponse = {
+    /**
+     * Optional seed/export date string.
+     */
+    date?: string;
+    title: string;
+    /**
+     * Display column count kept as string for legacy config compatibility.
+     */
+    columns: string;
+    items: Array<ConfigCategory>;
+};
+
+export type Pagination = {
+    limit: number;
+    offset: number;
+    total: number;
+    hasMore: boolean;
+};
+
+export type CategoryListResponse = {
+    data: Array<Category>;
+    pagination: Pagination;
+};
+
+export type ServiceListResponse = {
+    data: Array<Service>;
+    pagination: Pagination;
+};
+
+export type AuditLogListResponse = {
+    data: Array<AuditLog>;
+    pagination: Pagination;
 };
 
 export type ConfigCategory = {
@@ -82,11 +117,41 @@ export type Service = {
 export type ServiceStatus = {
     name: string;
     status: 'up' | 'down';
-    method: 'HEAD' | 'GET' | '';
+    method?: 'HEAD' | 'GET';
     code: number;
     responseTimeMs: number;
     checkedAt: string;
     error?: string;
+};
+
+export type AuditLog = {
+    id: number;
+    actorType: string;
+    actorId?: string;
+    actorName?: string;
+    action: string;
+    resourceType: string;
+    resourceId?: string;
+    summary: string;
+    /**
+     * JSON snapshot before the successful operation.
+     */
+    before?: {
+        [key: string]: unknown;
+    };
+    /**
+     * JSON snapshot after the successful operation.
+     */
+    after?: {
+        [key: string]: unknown;
+    };
+    metadata?: {
+        [key: string]: unknown;
+    };
+    requestId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    createdAt: string;
 };
 
 export type ApiError = {
@@ -138,6 +203,21 @@ export type ServiceUpdateRequest = {
 export type CategoryId = number;
 
 /**
+ * Optional category filter.
+ */
+export type CategoryIdQuery = number;
+
+/**
+ * Maximum number of records to return. Defaults to 100 for categories/services and 50 for audit logs.
+ */
+export type LimitParam = number;
+
+/**
+ * Number of records to skip before returning the page.
+ */
+export type OffsetParam = number;
+
+/**
  * Service identifier.
  */
 export type ServiceId = number;
@@ -187,13 +267,13 @@ export type ExportConfigResponses = {
     /**
      * Current dashboard config in legacy-compatible import/export shape
      */
-    200: DashboardConfig;
+    200: ExportConfigResponse;
 };
 
-export type ExportConfigResponse = ExportConfigResponses[keyof ExportConfigResponses];
+export type ExportConfigResponse2 = ExportConfigResponses[keyof ExportConfigResponses];
 
 export type ImportConfigData = {
-    body: DashboardConfig;
+    body: ImportConfigRequest;
     path?: never;
     query?: never;
     url: '/api/v1/import';
@@ -201,9 +281,13 @@ export type ImportConfigData = {
 
 export type ImportConfigErrors = {
     /**
-     * Request validation failed
+     * Malformed JSON or invalid request/query syntax
      */
     400: ApiError;
+    /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
     /**
      * Unexpected server error
      */
@@ -216,7 +300,7 @@ export type ImportConfigResponses = {
     /**
      * Imported dashboard config
      */
-    200: DashboardConfig;
+    200: ExportConfigResponse;
 };
 
 export type ImportConfigResponse = ImportConfigResponses[keyof ImportConfigResponses];
@@ -224,11 +308,24 @@ export type ImportConfigResponse = ImportConfigResponses[keyof ImportConfigRespo
 export type ListCategoriesData = {
     body?: never;
     path?: never;
-    query?: never;
+    query?: {
+        /**
+         * Maximum number of records to return. Defaults to 100 for categories/services and 50 for audit logs.
+         */
+        limit?: number;
+        /**
+         * Number of records to skip before returning the page.
+         */
+        offset?: number;
+    };
     url: '/api/v1/categories';
 };
 
 export type ListCategoriesErrors = {
+    /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
     /**
      * Unexpected server error
      */
@@ -241,7 +338,7 @@ export type ListCategoriesResponses = {
     /**
      * Categories sorted by display order
      */
-    200: Array<Category>;
+    200: CategoryListResponse;
 };
 
 export type ListCategoriesResponse = ListCategoriesResponses[keyof ListCategoriesResponses];
@@ -255,9 +352,17 @@ export type CreateCategoryData = {
 
 export type CreateCategoryErrors = {
     /**
-     * Request validation failed
+     * Malformed JSON or invalid request/query syntax
      */
     400: ApiError;
+    /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
+    /**
+     * Request field validation failed
+     */
+    422: ApiError;
     /**
      * Unexpected server error
      */
@@ -293,6 +398,10 @@ export type DeleteCategoryErrors = {
      */
     404: ApiError;
     /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
+    /**
      * Unexpected server error
      */
     500: ApiError;
@@ -323,13 +432,21 @@ export type UpdateCategoryData = {
 
 export type UpdateCategoryErrors = {
     /**
-     * Request validation failed
+     * Malformed JSON or invalid request/query syntax
      */
     400: ApiError;
     /**
      * Resource not found
      */
     404: ApiError;
+    /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
+    /**
+     * Request field validation failed
+     */
+    422: ApiError;
     /**
      * Unexpected server error
      */
@@ -354,12 +471,28 @@ export type ListServicesData = {
         /**
          * Optional category filter.
          */
-        categoryId?: string;
+        categoryId?: number;
+        /**
+         * Maximum number of records to return. Defaults to 100 for categories/services and 50 for audit logs.
+         */
+        limit?: number;
+        /**
+         * Number of records to skip before returning the page.
+         */
+        offset?: number;
     };
     url: '/api/v1/services';
 };
 
 export type ListServicesErrors = {
+    /**
+     * Malformed JSON or invalid request/query syntax
+     */
+    400: ApiError;
+    /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
     /**
      * Unexpected server error
      */
@@ -372,7 +505,7 @@ export type ListServicesResponses = {
     /**
      * Services sorted by category and display order
      */
-    200: Array<Service>;
+    200: ServiceListResponse;
 };
 
 export type ListServicesResponse = ListServicesResponses[keyof ListServicesResponses];
@@ -386,9 +519,17 @@ export type CreateServiceData = {
 
 export type CreateServiceErrors = {
     /**
-     * Request validation failed
+     * Malformed JSON or invalid request/query syntax
      */
     400: ApiError;
+    /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
+    /**
+     * Request field validation failed
+     */
+    422: ApiError;
     /**
      * Unexpected server error
      */
@@ -424,6 +565,10 @@ export type DeleteServiceErrors = {
      */
     404: ApiError;
     /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
+    /**
      * Unexpected server error
      */
     500: ApiError;
@@ -454,13 +599,21 @@ export type UpdateServiceData = {
 
 export type UpdateServiceErrors = {
     /**
-     * Request validation failed
+     * Malformed JSON or invalid request/query syntax
      */
     400: ApiError;
     /**
      * Resource not found
      */
     404: ApiError;
+    /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
+    /**
+     * Request field validation failed
+     */
+    422: ApiError;
     /**
      * Unexpected server error
      */
@@ -505,6 +658,56 @@ export type GetStatusResponses = {
 
 export type GetStatusResponse = GetStatusResponses[keyof GetStatusResponses];
 
+export type ListAuditLogsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filter by action, for example service.update.
+         */
+        action?: string;
+        /**
+         * Filter by resource type.
+         */
+        resourceType?: string;
+        /**
+         * Filter by resource identifier.
+         */
+        resourceId?: string;
+        /**
+         * Maximum number of records to return. Defaults to 100 for categories/services and 50 for audit logs.
+         */
+        limit?: number;
+        /**
+         * Number of records to skip before returning the page.
+         */
+        offset?: number;
+    };
+    url: '/api/v1/audit-logs';
+};
+
+export type ListAuditLogsErrors = {
+    /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
+    /**
+     * Unexpected server error
+     */
+    500: ApiError;
+};
+
+export type ListAuditLogsError = ListAuditLogsErrors[keyof ListAuditLogsErrors];
+
+export type ListAuditLogsResponses = {
+    /**
+     * Audit logs sorted by newest first. Defaults to limit 50 and offset 0.
+     */
+    200: AuditLogListResponse;
+};
+
+export type ListAuditLogsResponse = ListAuditLogsResponses[keyof ListAuditLogsResponses];
+
 export type StreamStatusData = {
     body?: never;
     path?: never;
@@ -547,6 +750,10 @@ export type GetServiceIconErrors = {
      * Resource not found
      */
     404: ApiError;
+    /**
+     * HTTP method is not allowed for this resource
+     */
+    405: ApiError;
     /**
      * Unexpected server error
      */

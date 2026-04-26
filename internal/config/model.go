@@ -1,5 +1,7 @@
 package config
 
+import "encoding/json"
+
 type Config struct {
 	Date    string     `json:"date"`
 	Title   string     `json:"title"`
@@ -63,4 +65,68 @@ type ServiceResourcePatch struct {
 	Target         *string `json:"target,omitempty"`
 	MonitorURL     *string `json:"monitorUrl,omitempty"`
 	MonitorEnabled *bool   `json:"monitorEnabled,omitempty"`
+}
+
+type Pagination struct {
+	Limit   int  `json:"limit"`
+	Offset  int  `json:"offset"`
+	Total   int  `json:"total"`
+	HasMore bool `json:"hasMore"`
+}
+
+type CategoryListResponse struct {
+	Data       []CategoryResource `json:"data"`
+	Pagination Pagination         `json:"pagination"`
+}
+
+type ServiceListResponse struct {
+	Data       []ServiceResource `json:"data"`
+	Pagination Pagination        `json:"pagination"`
+}
+
+type AuditLogListResponse struct {
+	Data       []AuditLog `json:"data"`
+	Pagination Pagination `json:"pagination"`
+}
+
+type AuditLog struct {
+	ID           int64           `json:"id"`
+	ActorType    string          `json:"actorType"`
+	ActorID      string          `json:"actorId,omitempty"`
+	ActorName    string          `json:"actorName,omitempty"`
+	Action       string          `json:"action"`
+	ResourceType string          `json:"resourceType"`
+	ResourceID   string          `json:"resourceId,omitempty"`
+	Summary      string          `json:"summary"`
+	Before       json.RawMessage `json:"before,omitempty"`
+	After        json.RawMessage `json:"after,omitempty"`
+	Metadata     json.RawMessage `json:"metadata,omitempty"`
+	RequestID    string          `json:"requestId,omitempty"`
+	IPAddress    string          `json:"ipAddress,omitempty"`
+	UserAgent    string          `json:"userAgent,omitempty"`
+	CreatedAt    string          `json:"createdAt"`
+}
+
+type AuditLogCreate struct {
+	ActorType    string
+	ActorID      string
+	ActorName    string
+	Action       string
+	ResourceType string
+	ResourceID   string
+	Summary      string
+	BeforeJSON   string
+	AfterJSON    string
+	MetadataJSON string
+	RequestID    string
+	IPAddress    string
+	UserAgent    string
+}
+
+type AuditLogQuery struct {
+	Action       string
+	ResourceType string
+	ResourceID   string
+	Limit        int
+	Offset       int
 }

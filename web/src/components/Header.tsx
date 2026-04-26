@@ -5,7 +5,7 @@ import { faPlus, faEdit, faCheck } from "@fortawesome/free-solid-svg-icons";
 import ThemeToggle from './ThemeToggle'
 import ConfigTools from './ConfigTools'
 import { getServiceStatus } from '../api'
-import type { Category, ServiceStatus, ServiceStatusMap } from '../types'
+import type { CategoryWithServices, ServiceStatus, ServiceStatusMap } from '../types'
 
 const  Avatar = 'https://avatars.githubusercontent.com/u/53508103?v=4'
 
@@ -13,10 +13,11 @@ type HeaderProps = {
   title: string
   onExportConfig: () => void
   onImportConfig: (file: File) => void
+  onOpenAuditLogs: () => void
   onAddCategory: () => void
   isEditMode: boolean
   onToggleEditMode: () => void
-  categories?: Category[]
+  categories?: CategoryWithServices[]
   serviceStatus?: ServiceStatusMap
 }
 
@@ -28,7 +29,7 @@ const getStableHash = (value?: string) =>
     return nextHash >>> 0
   }, 0)
 
-const getCategoryLed = (category: Category, serviceStatus: ServiceStatusMap) => {
+const getCategoryLed = (category: CategoryWithServices, serviceStatus: ServiceStatusMap) => {
   const monitored = category.list.filter((service) => service.monitorEnabled)
   if (monitored.length === 0) {
     return {
@@ -61,7 +62,7 @@ const getCategoryLed = (category: Category, serviceStatus: ServiceStatusMap) => 
   }
 }
 
-const getCategoryLedStyle = (category: Category): StatusLedStyle => {
+const getCategoryLedStyle = (category: CategoryWithServices): StatusLedStyle => {
   const seed = getStableHash(category.name)
   return {
     '--status-delay': `${(seed % 151) / 100}s`,
@@ -75,6 +76,7 @@ const Header = ({
   title,
   onExportConfig,
   onImportConfig,
+  onOpenAuditLogs,
   onAddCategory,
   isEditMode,
   onToggleEditMode,
@@ -109,6 +111,7 @@ const Header = ({
           <ConfigTools
             onExport={onExportConfig}
             onImport={onImportConfig}
+            onOpenAuditLogs={onOpenAuditLogs}
           />
 
           {/* 编辑模式切换按钮 */}

@@ -195,7 +195,27 @@ CREATE TABLE IF NOT EXISTS services (
 	monitor_url TEXT NOT NULL DEFAULT '',
 	monitor_enabled INTEGER NOT NULL DEFAULT 0,
 	FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
-);`)
+);
+CREATE TABLE IF NOT EXISTS audit_logs (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	actor_type TEXT NOT NULL DEFAULT 'local',
+	actor_id TEXT NOT NULL DEFAULT '',
+	actor_name TEXT NOT NULL DEFAULT '',
+	action TEXT NOT NULL,
+	resource_type TEXT NOT NULL,
+	resource_id TEXT NOT NULL DEFAULT '',
+	summary TEXT NOT NULL,
+	before_json TEXT NOT NULL DEFAULT '',
+	after_json TEXT NOT NULL DEFAULT '',
+	metadata_json TEXT NOT NULL DEFAULT '',
+	request_id TEXT NOT NULL DEFAULT '',
+	ip_address TEXT NOT NULL DEFAULT '',
+	user_agent TEXT NOT NULL DEFAULT '',
+	created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action);`)
 	if err != nil {
 		return err
 	}

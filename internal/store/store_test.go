@@ -28,7 +28,7 @@ func TestOpenCreatesSchema(t *testing.T) {
 	}
 	defer db.Close()
 
-	for _, table := range []string{"schema_migrations", "configs", "categories", "services"} {
+	for _, table := range []string{"schema_migrations", "configs", "categories", "services", "audit_logs"} {
 		var name string
 		err = db.QueryRow(`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`, table).Scan(&name)
 		if err != nil {
@@ -251,6 +251,59 @@ func TestCategoryAndServiceResourcesCRUD(t *testing.T) {
 	}
 	if _, err := store.GetService(ctx, service.ID); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("GetService() after category delete error = %v, want ErrNotFound", err)
+	}
+}
+
+func TestAuditLogsAppendAndList(t *testing.T) {
+	ctx := context.Background()
+	store, err := Open(filepath.Join(t.TempDir(), "homelab.db"), sampleConfig("audit"))
+	if err != nil {
+		t.Fatalf("Open() error = %v", err)
+	}
+	defer store.Close()
+
+	first, err := store.CreateAuditLog(ctx, config.AuditLogCreate{
+		Action:       "category.create",
+		ResourceType: "category",
+		ResourceID:   "1",
+		Summary:      "创建分类 Media",
+		AfterJSON:    `{"name":"Media"}`,
+	})
+	if err != nil {
+		t.Fatalf("CreateAuditLog() first error = %v", err)
+	}
+	second, err := store.CreateAuditLog(ctx, config.AuditLogCreate{
+		Action:       "service.update",
+		ResourceType: "service",
+		ResourceID:   "2",
+		Summary:      "更新服务 Jellyfin",
+		BeforeJSON:   `{"name":"Jellyfin"}`,
+		AfterJSON:    `{"name":"Jellyfin 2"}`,
+	})
+	if err != nil {
+		t.Fatalf("CreateAuditLog() second error = %v", err)
+	}
+
+	logs, err := store.ListAuditLogs(ctx, config.AuditLogQuery{Limit: 10})
+	if err != nil {
+		t.Fatalf("ListAuditLogs() error = %v", err)
+	}
+	if len(logs) != 2 {
+		t.Fatalf("logs length = %d, want 2", len(logs))
+	}
+	if logs[0].ID != second.ID || logs[1].ID != first.ID {
+		t.Fatalf("logs order = %#v, want newest first", logs)
+	}
+	if logs[0].ActorType != "local" || logs[0].Action != "service.update" || string(logs[0].Before) == "" {
+		t.Fatalf("latest audit log = %#v", logs[0])
+	}
+
+	filtered, err := store.ListAuditLogs(ctx, config.AuditLogQuery{ResourceType: "category", Limit: 10})
+	if err != nil {
+		t.Fatalf("ListAuditLogs() filtered error = %v", err)
+	}
+	if len(filtered) != 1 || filtered[0].Action != "category.create" {
+		t.Fatalf("filtered logs = %#v", filtered)
 	}
 }
 

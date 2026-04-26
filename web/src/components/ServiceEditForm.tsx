@@ -1,19 +1,17 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
-import type { BivariantCallback, Service } from '../types'
-
-type ServiceFormData = Pick<Service, 'name' | 'logo' | 'url' | 'target' | 'monitorEnabled' | 'monitorUrl'>
+import type { BivariantCallback, ServiceFormData, ServiceViewModel } from '../types'
 
 type ServiceEditFormProps = {
-  service: Service
+  service: ServiceViewModel
   onSave: BivariantCallback<[ServiceFormData]>
   onCancel: () => void
   onDelete?: () => void
 }
 
 const ServiceEditForm = ({ service, onSave, onCancel, onDelete }: ServiceEditFormProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ServiceFormData>({
     name: service.name,
     logo: service.logo || '',
     url: service.url,

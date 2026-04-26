@@ -26,6 +26,7 @@ func main() {
 	staticDir := envOrDefault("HOMELAB_STATIC_DIR", "web/dist")
 
 	log.Printf("listening on %s", addr)
+	log.Printf("api docs available at %s/api/docs", publicBaseURL(addr))
 	if err := http.ListenAndServe(addr, api.NewServer(st, staticDir)); err != nil {
 		log.Fatal(err)
 	}
@@ -37,4 +38,14 @@ func envOrDefault(name, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func publicBaseURL(addr string) string {
+	if addr == "" {
+		return "http://127.0.0.1"
+	}
+	if addr[0] == ':' {
+		return "http://127.0.0.1" + addr
+	}
+	return "http://" + addr
 }

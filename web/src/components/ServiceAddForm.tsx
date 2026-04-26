@@ -1,9 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTimes } from "@fortawesome/free-solid-svg-icons";
-import type { BivariantCallback, Service } from '../types'
-
-type ServiceFormData = Pick<Service, 'name' | 'logo' | 'url' | 'target' | 'monitorEnabled' | 'monitorUrl'>
+import type { BivariantCallback, ServiceFormData } from '../types'
 
 type ServiceAddFormProps = {
   onAdd: BivariantCallback<[ServiceFormData]>
@@ -11,7 +9,7 @@ type ServiceAddFormProps = {
 }
 
 const ServiceAddForm = ({ onAdd, onCancel }: ServiceAddFormProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ServiceFormData>({
     name: '',
     logo: '',
     url: '',

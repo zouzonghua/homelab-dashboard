@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Header from './components/Header'
 import ServiceGrid from './components/ServiceGrid'
 import CategoryAddForm from './components/CategoryAddForm'
 import CategoryEditForm from './components/CategoryEditForm'
 import ServiceAddForm from './components/ServiceAddForm'
 import ServiceEditForm from './components/ServiceEditForm'
+import AuditLogPanel from './components/AuditLogPanel'
 import {
   type SaveConfigOptions,
   dashboardApi,
@@ -12,7 +14,13 @@ import {
   saveDashboardConfig,
   subscribeStatus,
 } from './api'
-import type { Category, DashboardConfig, Service, ServiceStatusMap } from './types'
+import type {
+  CategoryWithServices,
+  DashboardViewModel,
+  ServiceFormData,
+  ServiceViewModel,
+  ServiceStatusMap,
+} from './types'
 import {
   exportConfig as exportConfigToFile,
   importConfig as importConfigFromFile
@@ -21,7 +29,7 @@ import { toast, ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 
 type EditingService = {
-  service: Service
+  service: ServiceViewModel
   categoryName: string
   serviceIndex: number
 }
@@ -31,123 +39,119 @@ type AddingService = {
 }
 
 type EditingCategory = {
-  category: Category
+  category: CategoryWithServices
   categoryIndex: number
 }
 
+const queryKeys = {
+  config: ['dashboardConfig'] as const,
+  status: ['serviceStatus'] as const,
+  auditLogs: ['auditLogs'] as const,
+}
+
 function App() {
-  const [config, setConfig] = useState<DashboardConfig | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [editingService, setEditingService] = useState<EditingService | null>(null)
   const [addingService, setAddingService] = useState<AddingService | null>(null)
   const [editingCategory, setEditingCategory] = useState<EditingCategory | null>(null)
-  const [serviceStatus, setServiceStatus] = useState<ServiceStatusMap>({})
+  const [auditLogsOpen, setAuditLogsOpen] = useState(false)
+
+  const configQuery = useQuery({
+    queryKey: queryKeys.config,
+    queryFn: fetchDashboardConfig,
+  })
+  const config = configQuery.data ?? null
+  const loading = configQuery.isLoading
+  const error = configQuery.error ? '配置加载失败' : null
+
+  const statusQuery = useQuery({
+    queryKey: queryKeys.status,
+    queryFn: dashboardApi.getStatus,
+    enabled: Boolean(config),
+    refetchInterval: 30000,
+  })
+  const serviceStatus = (statusQuery.data ?? {}) as ServiceStatusMap
+
+  const auditLogsQuery = useQuery({
+    queryKey: queryKeys.auditLogs,
+    queryFn: dashboardApi.listAuditLogs,
+    enabled: auditLogsOpen,
+  })
 
   useEffect(() => {
-    const loadConfig = async () => {
-      try {
-        const data = await fetchDashboardConfig();
-        setConfig(data);
-        document.title = data.title || "HomeLab Dashboard";
-      } catch (err) {
-        setError('配置加载失败');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadConfig();
-  }, []);
+    if (!config) return
+    document.title = config.title || "HomeLab Dashboard"
+  }, [config])
 
   useEffect(() => {
     if (!config) return;
 
-    const loadStatus = async () => {
-      try {
-        const status = await dashboardApi.getStatus();
-        if (import.meta.env.VITE_DEBUG_STATUS === '1') {
-          console.debug('[status] loaded', status);
-        }
-        setServiceStatus(status);
-      } catch (err) {
-        console.warn('加载服务状态失败:', err);
-      }
-    };
-
-    loadStatus();
-    let intervalId: number | null = null;
     let unsubscribe: (() => void) | null = null;
-    const startPolling = () => {
-      if (intervalId) return;
-      intervalId = window.setInterval(loadStatus, 30000);
-    };
 
     unsubscribe = subscribeStatus(
       (status) => {
         if (import.meta.env.VITE_DEBUG_STATUS === '1') {
           console.debug('[status] stream event', status);
         }
-        setServiceStatus(status);
+        queryClient.setQueryData(queryKeys.status, status);
       },
       (error) => {
-        console.warn('服务状态实时流失败，回退到轮询:', error);
+        console.warn('服务状态实时流失败，使用 React Query 轮询:', error);
         unsubscribe?.();
         unsubscribe = null;
-        startPolling();
       }
     );
-    if (!unsubscribe) {
-      startPolling();
-    }
 
     return () => {
       unsubscribe?.();
-      if (intervalId) {
-        window.clearInterval(intervalId);
-      }
     };
-  }, [config]);
+  }, [config, queryClient]);
+
+  const setConfig = (updater: (prevConfig: DashboardViewModel | null) => DashboardViewModel | null) => {
+    queryClient.setQueryData<DashboardViewModel>(queryKeys.config, (current) => {
+      const next = updater(current ?? null)
+      return next ?? current
+    })
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: ({ nextConfig, options }: { nextConfig: DashboardViewModel; options: SaveConfigOptions; successMessage: string }) =>
+      saveDashboardConfig(nextConfig, options),
+    onSuccess: async (_result, variables) => {
+      await queryClient.invalidateQueries({ queryKey: queryKeys.config });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: queryKeys.status }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs }),
+      ]);
+      toast.success(variables.successMessage, {
+        autoClose: 1000,
+        hideProgressBar: true,
+        position: "top-right"
+      });
+    },
+    onError: (error) => {
+      console.error('API 保存配置失败:', error);
+      toast.error('保存到服务端失败', {
+        autoClose: 1000,
+        hideProgressBar: true,
+        position: "top-right"
+      });
+    },
+  })
 
   const persistConfig = async (
-    nextConfig: DashboardConfig,
+    nextConfig: DashboardViewModel,
     successMessage: string,
     options: SaveConfigOptions
   ) => {
-    try {
-      await saveDashboardConfig(nextConfig, options);
-      const refreshedConfig = await fetchDashboardConfig();
-      setConfig(refreshedConfig);
-      document.title = refreshedConfig.title || "HomeLab Dashboard";
-      dashboardApi.getStatus()
-        .then((status) => {
-          if (import.meta.env.VITE_DEBUG_STATUS === '1') {
-            console.debug('[status] refreshed after save', status);
-          }
-          setServiceStatus(status);
-        })
-        .catch((error) => console.warn('刷新服务状态失败:', error));
-      toast.success(successMessage, {
-        autoClose: 2000,
-        hideProgressBar: true,
-        position: "bottom-right"
-      });
-    } catch (error) {
-      console.error('API 保存配置失败:', error);
-      toast.error('保存到服务端失败', {
-        autoClose: 2000,
-        hideProgressBar: true,
-        position: "bottom-right"
-      });
-    }
+    saveMutation.mutate({ nextConfig, successMessage, options })
   };
 
   const handleEditService = (
     categoryName: string,
-    updatedService: Service,
+    updatedService: ServiceFormData,
     serviceIndex: number
   ) => {
     setConfig(prevConfig => {
@@ -173,7 +177,7 @@ function App() {
     setEditingService(null); // 关闭编辑模态框
   };
 
-  const handleAddService = (categoryName: string, newService: Service) => {
+  const handleAddService = (categoryName: string, newService: ServiceFormData) => {
     setConfig(prevConfig => {
       if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
@@ -226,7 +230,7 @@ function App() {
     });
   };
 
-  const handleAddCategory = (newCategory: Category) => {
+  const handleAddCategory = (newCategory: CategoryWithServices) => {
     setConfig(prevConfig => {
       if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
@@ -268,11 +272,11 @@ function App() {
     });
   };
 
-  const handleOpenEditCategory = (category: Category, categoryIndex: number) => {
+  const handleOpenEditCategory = (category: CategoryWithServices, categoryIndex: number) => {
     setEditingCategory({ category, categoryIndex });
   };
 
-  const handleEditCategory = (categoryIndex: number, updatedCategory: Pick<Category, 'name' | 'icon'>) => {
+  const handleEditCategory = (categoryIndex: number, updatedCategory: Pick<CategoryWithServices, 'name' | 'icon'>) => {
     setConfig(prevConfig => {
       if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
@@ -295,7 +299,7 @@ function App() {
     setEditingCategory(null);
   };
 
-  const handleReorderCategories = (newCategories: Category[]) => {
+  const handleReorderCategories = (newCategories: CategoryWithServices[]) => {
     setConfig(prevConfig => {
       if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig, items: newCategories };
@@ -312,7 +316,7 @@ function App() {
     });
   };
 
-  const handleReorderServices = (categoryName: string, newServices: Service[]) => {
+  const handleReorderServices = (categoryName: string, newServices: ServiceViewModel[]) => {
     setConfig(prevConfig => {
       if (!prevConfig) return prevConfig;
       const newConfig = { ...prevConfig };
@@ -349,7 +353,7 @@ function App() {
     }
   };
 
-  const handleOpenEditService = (categoryName: string, service: Service, serviceIndex: number) => {
+  const handleOpenEditService = (categoryName: string, service: ServiceViewModel, serviceIndex: number) => {
     setEditingService({ service, categoryName, serviceIndex });
   };
 
@@ -371,7 +375,11 @@ function App() {
     try {
       const importedConfig = await importConfigFromFile(file);
       if (importedConfig) {
-        setConfig(importedConfig);
+        queryClient.setQueryData(queryKeys.config, importedConfig);
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: queryKeys.status }),
+          queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs }),
+        ]);
         document.title = importedConfig.title || "HomeLab Dashboard";
         toast.success('配置已导入');
       }
@@ -381,64 +389,9 @@ function App() {
     }
   };
 
-  // return (
-  //   <div style={{ backgroundColor: 'red' }} className="h-full w-full overflow-auto">
-  //   <div className='p-10 text-white dark:bg-dark-900'>
-  //     <h1>Hello World</h1>
-  //   </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //     <div className='p-10 text-white dark:bg-dark-900'>
-  //       <h1>Hello World</h1>
-  //     </div>
-  //   </div>
-  // )
+  const handleOpenAuditLogs = () => {
+    setAuditLogsOpen(true);
+  };
 
   if (loading) return (
     <div className="chassis-app flex items-center justify-center h-full">
@@ -458,6 +411,7 @@ function App() {
         title={config?.title || "HomeLab Dashboard"}
         onExportConfig={handleExportConfig}
         onImportConfig={handleImportConfig}
+        onOpenAuditLogs={handleOpenAuditLogs}
         onAddCategory={handleOpenAddCategory}
         isEditMode={isEditMode}
         onToggleEditMode={handleToggleEditMode}
@@ -486,6 +440,7 @@ function App() {
         </div>
       )}
 
+      {/* 服务网格 */}
       <ServiceGrid
         categories={config?.items || []}
         columns={config?.columns || 4}
@@ -516,6 +471,17 @@ function App() {
             />
           </div>
         </div>
+      )}
+
+      {/* 审计日志面板 */}
+      {auditLogsOpen && (
+        <AuditLogPanel
+          logs={auditLogsQuery.data ?? []}
+          loading={auditLogsQuery.isLoading}
+          error={auditLogsQuery.error ? '操作记录加载失败' : null}
+          onRefresh={() => auditLogsQuery.refetch()}
+          onClose={() => setAuditLogsOpen(false)}
+        />
       )}
 
       {/* 编辑服务模态框 */}
@@ -592,8 +558,9 @@ function App() {
         </div>
       )}
 
+      {/* 通知容器 */}
       <ToastContainer
-        position="bottom-right"
+        position="top-right"
         autoClose={3000}
         hideProgressBar={false}
         newestOnTop={false}

@@ -1,13 +1,14 @@
 import { useState, useRef, type ChangeEvent } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTools, faDownload, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faTools, faDownload, faUpload, faClockRotateLeft } from "@fortawesome/free-solid-svg-icons";
 
 type ConfigToolsProps = {
   onExport: () => void
   onImport: (file: File) => void
+  onOpenAuditLogs: () => void
 }
 
-const ConfigTools = ({ onExport, onImport }: ConfigToolsProps) => {
+const ConfigTools = ({ onExport, onImport, onOpenAuditLogs }: ConfigToolsProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,6 +25,11 @@ const ConfigTools = ({ onExport, onImport }: ConfigToolsProps) => {
     fileInputRef.current?.click();
   };
 
+  const handleOpenAuditLogs = () => {
+    onOpenAuditLogs();
+    setIsOpen(false);
+  };
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -38,8 +44,9 @@ const ConfigTools = ({ onExport, onImport }: ConfigToolsProps) => {
     <div className="relative">
       <button
         onClick={toggleMenu}
-        className="p-2 transition-colors"
+        className="chassis-icon-button config-tools-button p-2 transition-colors"
         aria-label="配置工具"
+        title="配置工具"
       >
         <FontAwesomeIcon icon={faTools} />
       </button>
@@ -59,6 +66,13 @@ const ConfigTools = ({ onExport, onImport }: ConfigToolsProps) => {
           >
             <FontAwesomeIcon icon={faUpload} className="mr-2" />
             <span>导入配置</span>
+          </button>
+          <button
+            onClick={handleOpenAuditLogs}
+            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+          >
+            <FontAwesomeIcon icon={faClockRotateLeft} className="mr-2" />
+            <span>操作记录</span>
           </button>
           <input
             type="file"

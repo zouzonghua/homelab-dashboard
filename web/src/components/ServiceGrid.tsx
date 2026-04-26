@@ -17,32 +17,32 @@ import {
 } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { BivariantCallback, Category, Service, ServiceStatusMap } from '../types'
+import type { BivariantCallback, CategoryWithServices, ServiceStatusMap, ServiceViewModel } from '../types'
 
 type SortableCategoryItemProps = {
-  category: Category
+  category: CategoryWithServices
   index: number
   columnClass: string
-  onOpenEditService?: BivariantCallback<[string, Service, number]>
+  onOpenEditService?: BivariantCallback<[string, ServiceViewModel, number]>
   onOpenAddService?: BivariantCallback<[string]>
   onDeleteService?: BivariantCallback<[string, number]>
   onDeleteCategory?: BivariantCallback<[string]>
-  onOpenEditCategory?: BivariantCallback<[Category, number]>
-  onReorderServices?: BivariantCallback<[string, Service[]]>
+  onOpenEditCategory?: BivariantCallback<[CategoryWithServices, number]>
+  onReorderServices?: BivariantCallback<[string, ServiceViewModel[]]>
   isEditMode?: boolean
   serviceStatus?: ServiceStatusMap
 }
 
 type ServiceGridProps = {
-  categories: Category[]
+  categories: CategoryWithServices[]
   columns?: string | number
-  onOpenEditService?: BivariantCallback<[string, Service, number]>
+  onOpenEditService?: BivariantCallback<[string, ServiceViewModel, number]>
   onOpenAddService?: BivariantCallback<[string]>
   onDeleteService?: BivariantCallback<[string, number]>
   onDeleteCategory?: BivariantCallback<[string]>
-  onOpenEditCategory?: BivariantCallback<[Category, number]>
-  onReorderCategories?: BivariantCallback<[Category[]]>
-  onReorderServices?: BivariantCallback<[string, Service[]]>
+  onOpenEditCategory?: BivariantCallback<[CategoryWithServices, number]>
+  onReorderCategories?: BivariantCallback<[CategoryWithServices[]]>
+  onReorderServices?: BivariantCallback<[string, ServiceViewModel[]]>
   isEditMode?: boolean
   serviceStatus?: ServiceStatusMap
 }
