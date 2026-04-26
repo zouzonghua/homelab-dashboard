@@ -1,50 +1,55 @@
-import type { Category, DashboardConfig, Service, ServiceId, ServiceStatusMap } from '../types'
+import type {
+  Category as UiCategory,
+  DashboardConfig as UiDashboardConfig,
+  Service as UiService,
+  ServiceId as UiServiceId,
+  ServiceStatusMap as UiServiceStatusMap,
+} from '../types'
+import type {
+  Category as ApiCategory,
+  CategoryCreateRequest,
+  CategoryUpdateRequest,
+  DashboardConfig as ApiDashboardConfig,
+  GetDashboardResponse,
+  GetStatusResponse,
+  ListCategoriesResponse,
+  ListServicesResponse,
+  Service as ApiService,
+  ServiceCreateRequest,
+  ServiceUpdateRequest,
+} from './contract'
 import { apiClient } from './http'
 
-type DashboardSettings = {
-  [key: string]: unknown
-  title?: string
-  columns?: string | number
-}
-
-type CategoryResource = {
-  [key: string]: unknown
-  id?: ServiceId
-  name: string
-  icon?: string
-  order?: number
-  sortOrder?: number
-}
-type ServiceResource = Service
+type DashboardSettings = GetDashboardResponse
+type CategoryResource = ListCategoriesResponse[number]
+type ServiceResource = ListServicesResponse[number]
+type ApiServiceStatusMap = GetStatusResponse
+type ServiceStatusMap = UiServiceStatusMap
+type ServiceTarget = NonNullable<ServiceCreateRequest['target']>
 
 const sortByOrder = <T extends { sortOrder?: number; order?: number }>(items: T[]) =>
   [...items].sort((left, right) => (left.sortOrder ?? left.order ?? 0) - (right.sortOrder ?? right.order ?? 0))
 
-const toUiService = (service: ServiceResource): Service => ({
+const toUiService = (service: ServiceResource): UiService => ({
   ...service,
-  logo: service.logo ?? service.logoUrl,
-  logoUrl: service.logoUrl,
-  url: service.url ?? service.serviceUrl,
-  serviceUrl: service.serviceUrl,
+  logo: service.logo,
+  url: service.url,
 })
 
-const toServicePayload = (service: Service) => {
-  const {
-    id,
-    logo,
-    logoUrl,
-    url,
-    serviceUrl,
-    ...rest
-  } = service
+const toNumberId = (id: UiServiceId) => Number(id)
+const toServiceTarget = (target: UiService['target']): ServiceTarget =>
+  target === '_self' ? '_self' : '_blank'
 
+const toServicePayload = (service: UiService): ServiceUpdateRequest => {
   return {
-    name: rest.name,
-    logo: logo ?? logoUrl,
-    url: url ?? serviceUrl,
-    ...Object.fromEntries(
-      Object.entries(rest).filter(([key]) => key !== 'name')
-    ),
+    categoryId: service.categoryId == null ? undefined : toNumberId(service.categoryId),
+    order: service.order,
+    name: service.name,
+    logo: service.logo ?? service.logoUrl ?? '',
+    url: service.url ?? service.serviceUrl ?? '',
+    target: service.target == null ? undefined : toServiceTarget(service.target),
+    monitorUrl: service.monitorUrl,
+    monitorEnabled: service.monitorEnabled,
   }
 }
 
@@ -52,46 +57,50 @@ export const dashboardApi = {
   getSettings: () => apiClient.get<DashboardSettings>('/api/v1/dashboard'),
   listCategories: () => apiClient.get<CategoryResource[]>('/api/v1/categories'),
   listServices: () => apiClient.get<ServiceResource[]>('/api/v1/services'),
-  createCategory: (category: Category) =>
-    apiClient.post<Category>('/api/v1/categories', {
+  createCategory: (category: UiCategory) =>
+    apiClient.post<ApiCategory>('/api/v1/categories', {
       name: category.name,
-      icon: category.icon,
-    }),
-  updateCategory: (category: Category) =>
-    apiClient.patch<Category>(`/api/v1/categories/${encodeURIComponent(String(category.id))}`, {
+      icon: category.icon ?? 'fa-solid fa-folder',
+    } satisfies CategoryCreateRequest),
+  updateCategory: (category: UiCategory) =>
+    apiClient.patch<ApiCategory>(`/api/v1/categories/${encodeURIComponent(String(category.id))}`, {
       name: category.name,
       icon: category.icon,
       order: category.order,
-    }),
-  deleteCategory: (category: Category) =>
+    } satisfies CategoryUpdateRequest),
+  deleteCategory: (category: UiCategory) =>
     apiClient.delete<null>(`/api/v1/categories/${encodeURIComponent(String(category.id))}`),
-  createService: (categoryId: ServiceId, service: Service) =>
-    apiClient.post<Service>('/api/v1/services', {
-      categoryId,
-      ...toServicePayload(service),
-      target: service.target || '_blank',
-    }),
-  updateService: (service: Service) =>
-    apiClient.patch<Service>(`/api/v1/services/${encodeURIComponent(String(service.id))}`, toServicePayload(service)),
-  deleteService: (service: Service) =>
+  createService: (categoryId: UiServiceId, service: UiService) =>
+    apiClient.post<ApiService>('/api/v1/services', {
+      categoryId: toNumberId(categoryId),
+      name: service.name,
+      logo: service.logo ?? service.logoUrl ?? '',
+      url: service.url ?? service.serviceUrl ?? '',
+      target: toServiceTarget(service.target),
+      monitorUrl: service.monitorUrl,
+      monitorEnabled: service.monitorEnabled,
+    } satisfies ServiceCreateRequest),
+  updateService: (service: UiService) =>
+    apiClient.patch<ApiService>(`/api/v1/services/${encodeURIComponent(String(service.id))}`, toServicePayload(service)),
+  deleteService: (service: UiService) =>
     apiClient.delete<null>(`/api/v1/services/${encodeURIComponent(String(service.id))}`),
-  getStatus: () => apiClient.get<ServiceStatusMap>('/api/v1/status'),
+  getStatus: () => apiClient.get<ApiServiceStatusMap>('/api/v1/status'),
   exportConfig: () => apiClient.blob({ url: '/api/v1/export', method: 'GET' }),
-  importConfig: (config: unknown) =>
-    apiClient.put<DashboardConfig>('/api/v1/import', config),
+  importConfig: (config: ApiDashboardConfig) =>
+    apiClient.put<ApiDashboardConfig>('/api/v1/import', config),
 }
 
 export type SaveConfigOptions =
-  | { action: 'createCategory'; category: Category }
-  | { action: 'updateCategory'; category: Category }
-  | { action: 'deleteCategory'; category: Category }
-  | { action: 'reorderCategories'; categories: Category[] }
-  | { action: 'createService'; categoryId: ServiceId; service: Service }
-  | { action: 'updateService'; service: Service }
-  | { action: 'deleteService'; service: Service }
-  | { action: 'reorderServices'; services: Service[] }
+  | { action: 'createCategory'; category: UiCategory }
+  | { action: 'updateCategory'; category: UiCategory }
+  | { action: 'deleteCategory'; category: UiCategory }
+  | { action: 'reorderCategories'; categories: UiCategory[] }
+  | { action: 'createService'; categoryId: UiServiceId; service: UiService }
+  | { action: 'updateService'; service: UiService }
+  | { action: 'deleteService'; service: UiService }
+  | { action: 'reorderServices'; services: UiService[] }
 
-export const fetchDashboardConfig = async (): Promise<DashboardConfig> => {
+export const fetchDashboardConfig = async (): Promise<UiDashboardConfig> => {
   const [dashboard, categories, services]: [DashboardSettings, CategoryResource[], ServiceResource[]] = await Promise.all([
     dashboardApi.getSettings(),
     dashboardApi.listCategories(),
@@ -101,7 +110,7 @@ export const fetchDashboardConfig = async (): Promise<DashboardConfig> => {
   return {
     ...dashboard,
     columns: String(dashboard.columns ?? 4),
-    items: sortByOrder(categories).map((category): Category => {
+    items: sortByOrder(categories).map((category): UiCategory => {
       return {
         ...category,
         list: sortByOrder(
@@ -149,8 +158,7 @@ export const getServiceStatus = (
   serviceStatus: ServiceStatusMap | null | undefined,
   service: { id?: string | number; name?: string }
 ) =>
-  (service.id == null ? undefined : serviceStatus?.[String(service.id)]) ??
-  (service.name == null ? undefined : serviceStatus?.[service.name])
+  service.id == null ? undefined : serviceStatus?.[String(service.id)]
 
 export const subscribeStatus = (
   onStatus: (status: ServiceStatusMap) => void,

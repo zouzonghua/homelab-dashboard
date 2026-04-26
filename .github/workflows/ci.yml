@@ -34,8 +34,11 @@ jobs:
       - name: Validate OpenAPI contract
         run: ruby -e "require 'yaml'; YAML.load_file('api/openapi.yaml')"
 
+      - name: Check generated API types
+        run: npm --prefix web run api:types:check
+
       - name: Run Go tests
-        run: go test ./cmd/... ./internal/...
+        run: go test ./api ./cmd/... ./internal/...
 
       - name: Run web unit tests
         run: npm --prefix web test

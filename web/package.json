@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "cd .. && HOMELAB_DB_PATH=data/homelab.db HOMELAB_STATIC_DIR=web/dist PORT=8080 go run ./cmd/server",
+    "api:types": "rm -rf ./src/api/contract && openapi-ts -i ../api/openapi.yaml -o ./src/api/contract -p @hey-api/typescript && test -f ./src/api/contract/types.gen.ts",
+    "api:types:check": "npm run api:types && git diff --exit-code src/api/contract",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest run --passWithNoTests --environment jsdom src",
@@ -29,6 +31,7 @@
     "react-toastify": "^11.0.5"
   },
   "devDependencies": {
+    "@hey-api/openapi-ts": "^0.96.1",
     "@playwright/test": "^1.59.1",
     "@testing-library/jest-dom": "^6.4.8",
     "@testing-library/react": "^15.0.7",

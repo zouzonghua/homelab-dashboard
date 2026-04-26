@@ -380,6 +380,44 @@ func TestGetV1ServiceIconFallsBackToGeneratedSVG(t *testing.T) {
 	}
 }
 
+func TestGetOpenAPIContract(t *testing.T) {
+	handler, cleanup := newTestHandler(t, apiSampleConfig("contract"))
+	defer cleanup()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/openapi.yaml", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /api/openapi.yaml status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "application/yaml; charset=utf-8" {
+		t.Fatalf("content type = %q, want application/yaml; charset=utf-8", got)
+	}
+	if body := rec.Body.String(); !strings.Contains(body, "openapi: 3.1.0") || !strings.Contains(body, "/api/v1/dashboard:") {
+		t.Fatalf("openapi body did not include expected contract markers: %s", body)
+	}
+}
+
+func TestGetAPIDocsPage(t *testing.T) {
+	handler, cleanup := newTestHandler(t, apiSampleConfig("docs"))
+	defer cleanup()
+
+	req := httptest.NewRequest(http.MethodGet, "/api/docs", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /api/docs status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if got := rec.Header().Get("Content-Type"); got != "text/html; charset=utf-8" {
+		t.Fatalf("content type = %q, want text/html; charset=utf-8", got)
+	}
+	if body := rec.Body.String(); !strings.Contains(body, "Homelab Dashboard API") || !strings.Contains(body, "/api/openapi.yaml") {
+		t.Fatalf("docs body did not include expected markers: %s", body)
+	}
+}
+
 func newTestHandler(t *testing.T, seed config.Config) (http.Handler, func()) {
 	t.Helper()
 	st, err := store.Open(filepath.Join(t.TempDir(), "homelab.db"), seed)

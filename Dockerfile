@@ -11,9 +11,10 @@ WORKDIR /app
 RUN apk add --no-cache build-base
 COPY go.mod go.sum ./
 RUN go mod download
+COPY api ./api
 COPY cmd ./cmd
 COPY internal ./internal
-RUN go test ./...
+RUN go test ./api ./cmd/... ./internal/...
 RUN go build -o /out/homelab-dashboard ./cmd/server
 
 FROM alpine:3.22

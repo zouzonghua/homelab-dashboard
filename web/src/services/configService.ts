@@ -3,6 +3,7 @@
  */
 
 import { dashboardApi, fetchDashboardConfig } from '../api'
+import type { DashboardConfig } from '../api/contract'
 
 const DEFAULT_EXPORT_FILENAME = 'homelab-dashboard-config.json'
 
@@ -42,10 +43,10 @@ export const exportConfig = async () => {
  * 导入配置文件到服务端 SQLite，并返回刷新后的 API 配置
  */
 export const importConfig = async (file: File) => {
-  let config: unknown
+  let config: DashboardConfig
 
   try {
-    config = JSON.parse(await readFileAsText(file))
+    config = JSON.parse(await readFileAsText(file)) as DashboardConfig
   } catch {
     throw new Error('配置文件格式无效')
   }

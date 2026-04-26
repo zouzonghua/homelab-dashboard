@@ -20,6 +20,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	openapi "github.com/zouzonghua/homelab-dashboard/api"
 	"github.com/zouzonghua/homelab-dashboard/internal/config"
 	"github.com/zouzonghua/homelab-dashboard/internal/icon"
 	"github.com/zouzonghua/homelab-dashboard/internal/monitor"
@@ -28,6 +29,20 @@ import (
 
 func NewServer(st *store.Store, staticDir string) http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("/api/openapi.yaml", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", nil)
+			return
+		}
+		getOpenAPI(w, r)
+	})
+	mux.HandleFunc("/api/docs", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", nil)
+			return
+		}
+		getAPIDocs(w, r)
+	})
 	mux.HandleFunc("/api/v1/dashboard", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", nil)
@@ -129,6 +144,31 @@ func NewServer(st *store.Store, staticDir string) http.Handler {
 	})
 	mux.Handle("/", StaticFallbackHandler(staticDir))
 	return mux
+}
+
+func getOpenAPI(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/yaml; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-cache")
+	_, _ = w.Write(openapi.OpenAPIYAML)
+}
+
+func getAPIDocs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_, _ = io.WriteString(w, `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Homelab Dashboard API</title>
+  <style>
+    body { margin: 0; background: #f8fafc; color: #0f172a; }
+  </style>
+</head>
+<body>
+  <redoc spec-url="/api/openapi.yaml"></redoc>
+  <script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+</body>
+</html>`)
 }
 
 func StaticFallbackHandler(staticDir string) http.Handler {

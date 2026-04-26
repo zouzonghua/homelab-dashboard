@@ -12,7 +12,7 @@ import {
   saveDashboardConfig,
   subscribeStatus,
 } from './api'
-import type { Category, DashboardConfig, Service } from './types'
+import type { Category, DashboardConfig, Service, ServiceStatusMap } from './types'
 import {
   exportConfig as exportConfigToFile,
   importConfig as importConfigFromFile
@@ -44,7 +44,7 @@ function App() {
   const [editingService, setEditingService] = useState<EditingService | null>(null)
   const [addingService, setAddingService] = useState<AddingService | null>(null)
   const [editingCategory, setEditingCategory] = useState<EditingCategory | null>(null)
-  const [serviceStatus, setServiceStatus] = useState<Record<string, unknown>>({})
+  const [serviceStatus, setServiceStatus] = useState<ServiceStatusMap>({})
 
   useEffect(() => {
     const loadConfig = async () => {

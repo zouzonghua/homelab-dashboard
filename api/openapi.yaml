@@ -507,6 +507,9 @@ components:
           minLength: 1
         icon:
           type: string
+        order:
+          type: integer
+          minimum: 0
     ServiceCreateRequest:
       type: object
       required: [categoryId, name, url, target]
@@ -542,6 +545,9 @@ components:
           type: integer
           format: int64
           minimum: 1
+        order:
+          type: integer
+          minimum: 0
         name:
           type: string
           minLength: 1

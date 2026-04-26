@@ -41,7 +41,7 @@ export interface ServiceStatus {
   error?: string
 }
 
-export type ServiceStatusMap = Record<string, unknown>
+export type ServiceStatusMap = Record<string, ServiceStatus>
 
 export type DragHandleProps = HTMLAttributes<HTMLElement> & Record<string, unknown>
 
