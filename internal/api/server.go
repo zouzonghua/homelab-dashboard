@@ -557,11 +557,7 @@ func writeStatusEvent(w io.Writer, results map[string]monitor.Result) error {
 }
 
 func serveIcon(w http.ResponseWriter, r *http.Request, rawURL string, name string) {
-	cacheDir := os.Getenv("HOMELAB_ICON_CACHE_DIR")
-	if cacheDir == "" {
-		cacheDir = filepath.Join("data", "icons")
-	}
-	fetcher := icon.NewFetcher(cacheDir, 3*time.Second)
+	fetcher := icon.NewFetcher(defaultIconCacheDir(), 3*time.Second)
 	result, err := fetcher.Fetch(r.Context(), rawURL)
 	if err != nil {
 		writeFallbackIcon(w, rawURL, name)
@@ -576,6 +572,19 @@ func serveIcon(w http.ResponseWriter, r *http.Request, rawURL string, name strin
 	}
 	w.Header().Set("Cache-Control", "public, max-age=86400")
 	http.ServeFile(w, r, result.Path)
+}
+
+func defaultIconCacheDir() string {
+	if cacheDir := strings.TrimSpace(os.Getenv("HOMELAB_ICON_CACHE_DIR")); cacheDir != "" {
+		return cacheDir
+	}
+	if dbPath := strings.TrimSpace(os.Getenv("HOMELAB_DB_PATH")); dbPath != "" {
+		dbDir := filepath.Dir(dbPath)
+		if dbDir != "." && dbDir != "" {
+			return filepath.Join(dbDir, "icons")
+		}
+	}
+	return filepath.Join("data", "icons")
 }
 
 func writeFallbackIcon(w http.ResponseWriter, rawURL string, name string) {

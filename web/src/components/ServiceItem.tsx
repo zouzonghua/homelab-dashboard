@@ -67,24 +67,18 @@ const ServiceItem = ({ service, onOpenEdit, isEditMode, dragHandleProps, status 
     }
   }
 
-  // 动态导入图片
   const getImagePath = (logo?: string) => {
-    if (!logo) {
-      return service.id ? `/api/v1/services/${encodeURIComponent(service.id)}/icon` : getFallbackLogo()
+    const automaticIcon = service.id ? `/api/v1/services/${encodeURIComponent(service.id)}/icon` : getFallbackLogo()
+    const value = logo?.trim() ?? ''
+
+    if (!value || value.startsWith('assets/icons/')) {
+      return automaticIcon
     }
-    // 如果是完整URL（以 http 或 https 开头）
-    if (logo.startsWith('http')) {
-      return logo
+    if (value.startsWith('http') || value.startsWith('/')) {
+      return value
     }
-    // 如果是本地资源，使用动态导入
-    try {
-      // 移除开头的 'assets/' 因为已经在 src/assets 下了
-      const path = logo.replace('assets/', '')
-      return new URL(`../assets/${path}`, import.meta.url).href
-    } catch (error) {
-      console.error('Error loading image:', error)
-      return logo
-    }
+
+    return value
   }
 
   const handleEditClick = (e: MouseEvent<HTMLButtonElement>) => {
