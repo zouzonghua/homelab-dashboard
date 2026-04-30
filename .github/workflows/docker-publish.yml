@@ -11,9 +11,15 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: docker-publish-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   docker:
     runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: zouzonghua/homelab-dashboard
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -22,10 +28,13 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: zouzonghua/homelab-dashboard
+          images: ${{ env.IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}},prefix=v
+            type=semver,pattern={{version}}
+            type=semver,pattern=v{{version}}
+            type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -40,6 +49,7 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -48,3 +58,17 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Publish summary
+        run: |
+          {
+            echo "### Docker image published"
+            echo
+            echo "**Image:** \`${IMAGE_NAME}\`"
+            echo "**Digest:** \`${{ steps.build.outputs.digest }}\`"
+            echo
+            echo "**Tags:**"
+            echo '${{ steps.meta.outputs.tags }}' | sed 's/^/- `/' | sed 's/$/`/'
+          } >> "$GITHUB_STEP_SUMMARY"
