@@ -443,6 +443,24 @@ func TestGetV1ServiceIconFallsBackToGeneratedSVG(t *testing.T) {
 	}
 }
 
+func TestDefaultIconCacheDirFollowsDatabasePath(t *testing.T) {
+	t.Setenv("HOMELAB_ICON_CACHE_DIR", "")
+	t.Setenv("HOMELAB_DB_PATH", "/data/homelab.db")
+
+	if got, want := defaultIconCacheDir(), "/data/icons"; got != want {
+		t.Fatalf("defaultIconCacheDir() = %q, want %q", got, want)
+	}
+}
+
+func TestDefaultIconCacheDirPrefersExplicitEnv(t *testing.T) {
+	t.Setenv("HOMELAB_ICON_CACHE_DIR", "/cache/icons")
+	t.Setenv("HOMELAB_DB_PATH", "/data/homelab.db")
+
+	if got, want := defaultIconCacheDir(), "/cache/icons"; got != want {
+		t.Fatalf("defaultIconCacheDir() = %q, want %q", got, want)
+	}
+}
+
 func TestV1MutationsWriteAuditLogs(t *testing.T) {
 	handler, cleanup := newTestHandler(t, apiSampleConfig("audit api"))
 	defer cleanup()

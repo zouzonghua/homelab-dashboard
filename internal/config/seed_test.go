@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -28,5 +29,12 @@ func TestLoadSeedFromEnvUsesEmbeddedDefaultWithoutWebAsset(t *testing.T) {
 	}
 	if seed.Title == "" || len(seed.Items) == 0 {
 		t.Fatalf("embedded seed was not loaded: %#v", seed)
+	}
+	for _, category := range seed.Items {
+		for _, service := range category.List {
+			if strings.HasPrefix(service.Logo, "assets/icons/") {
+				t.Fatalf("embedded seed should not reference bundled service icons: %#v", service)
+			}
+		}
 	}
 }

@@ -119,15 +119,17 @@ docker compose -f deploy/compose.yml up -d
 docker compose -f deploy/compose.yml up --build
 ```
 
-访问 `http://localhost:8080`，SQLite 数据会保存在本地 `data/homelab.db` 中，方便用 DBeaver 等工具查看。
+访问 `http://localhost:8080`，SQLite 数据会保存在本地 `data/homelab.db` 中，自动获取的 favicon 缓存在 `data/icons/`，方便用 DBeaver 等工具查看。
 
 ### Docker 镜像发布
 
 GitHub Actions 会在以下场景发布镜像到 Docker Hub：
 
 - 推送到 `main`：发布 `zouzonghua/homelab-dashboard:latest`
-- 推送 `v*.*.*` 标签或发布 GitHub Release：发布对应版本标签
+- 推送 `v*.*.*` 标签或发布 GitHub Release：发布 `1.2.3`、`v1.2.3`、`1.2` 等版本标签
 - 手动触发 `Publish Docker image` workflow
+
+发布流程会构建 `linux/amd64` 和 `linux/arm64` 双架构镜像，并在 GitHub Actions summary 中输出镜像 digest 和 tag 列表。测试与类型检查由 CI workflow 负责，Docker 发布 workflow 只负责构建和推送镜像。
 
 仓库需要配置 Secrets：
 
@@ -166,7 +168,7 @@ npm --prefix web run test:e2e
       "list": [
         {
           "name": "Jellyfin", // 服务名称
-          "logo": "assets/icons/jellyfin.png", // 图标或者网络图标
+          "logo": "", // 留空自动获取 favicon，也可填写网络图标 URL
           "url": "http://192.168.1.203:8096", // 链接
           "target": "_blank" // 打开方式
         }
