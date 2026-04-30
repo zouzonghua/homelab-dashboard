@@ -2,6 +2,16 @@
 
 一个现代化的家庭服务器仪表盘，帮助你更好地管理和监控你的家庭服务器。
 
+## 在线预览
+
+[https://homelab.zouzonghua.cn](https://homelab.zouzonghua.cn)
+
+## 界面预览
+
+![Homelab Dashboard 暗色模式](assets/readme/dashboard-dark.png)
+
+![Homelab Dashboard 浅色模式](assets/readme/dashboard-light.png)
+
 ## 功能特点
 
 - [x] 🎯 一键访问常用服务
