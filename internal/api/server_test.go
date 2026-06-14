@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/zouzonghua/homelab-dashboard/internal/config"
 	"github.com/zouzonghua/homelab-dashboard/internal/store"
@@ -309,6 +310,46 @@ func TestGetV1StatusReturnsResultsKeyedByServiceID(t *testing.T) {
 	}
 }
 
+func TestGetV1StatusChecksServicesConcurrently(t *testing.T) {
+	monitored := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(300 * time.Millisecond)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer monitored.Close()
+
+	seed := apiSampleConfig("v1 status concurrent")
+	seed.Items[0].List = []config.Service{
+		{Name: "One", URL: monitored.URL, Target: "_blank", MonitorEnabled: true},
+		{Name: "Two", URL: monitored.URL, Target: "_blank", MonitorEnabled: true},
+		{Name: "Three", URL: monitored.URL, Target: "_blank", MonitorEnabled: true},
+	}
+	handler, cleanup := newTestHandler(t, seed)
+	defer cleanup()
+
+	startedAt := time.Now()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/status", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	elapsed := time.Since(startedAt)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET /api/v1/status status = %d, want %d", rec.Code, http.StatusOK)
+	}
+	if elapsed > 600*time.Millisecond {
+		t.Fatalf("status checks took %s, want concurrent checks below 600ms", elapsed)
+	}
+
+	var got map[string]struct {
+		Status string `json:"status"`
+	}
+	if err := json.NewDecoder(rec.Body).Decode(&got); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("status result count = %d, want 3: %#v", len(got), got)
+	}
+}
+
 func TestGetV1StatusStreamEmitsResultsKeyedByServiceID(t *testing.T) {
 	monitored := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
@@ -332,26 +373,67 @@ func TestGetV1StatusStreamEmitsResultsKeyedByServiceID(t *testing.T) {
 	defer resp.Body.Close()
 
 	scanner := bufio.NewScanner(resp.Body)
-	var lines []string
+	var dataLine string
+	inStatusEvent := false
 	for scanner.Scan() {
 		line := scanner.Text()
-		if line == "" {
+		if line == "event: status" {
+			inStatusEvent = true
+			continue
+		}
+		if inStatusEvent && strings.HasPrefix(line, "data: ") {
+			dataLine = strings.TrimPrefix(line, "data: ")
 			break
 		}
-		lines = append(lines, line)
 	}
 	if err := scanner.Err(); err != nil {
 		t.Fatalf("read stream: %v", err)
+	}
+	if dataLine == "" {
+		t.Fatal("stream did not emit status data")
 	}
 
 	var got map[string]struct {
 		Status string `json:"status"`
 	}
-	if err := json.Unmarshal([]byte(strings.TrimPrefix(lines[1], "data: ")), &got); err != nil {
+	if err := json.Unmarshal([]byte(dataLine), &got); err != nil {
 		t.Fatalf("decode status event: %v", err)
 	}
 	if got[fmt.Sprint(serviceID)].Status != "up" {
 		t.Fatalf("stream status = %#v, want service id %d up", got, serviceID)
+	}
+}
+
+func TestGetV1StatusStreamFlushesBeforeStatusChecks(t *testing.T) {
+	monitored := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(500 * time.Millisecond)
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	defer monitored.Close()
+
+	seed := apiSampleConfig("v1 status stream fast open")
+	seed.Items[0].List[0].MonitorEnabled = true
+	seed.Items[0].List[0].MonitorURL = monitored.URL
+	handler, cleanup := newTestHandler(t, seed)
+	defer cleanup()
+
+	server := httptest.NewServer(handler)
+	defer server.Close()
+
+	client := server.Client()
+	client.Timeout = 200 * time.Millisecond
+	resp, err := client.Get(server.URL + "/api/v1/status/stream")
+	if err != nil {
+		t.Fatalf("GET /api/v1/status/stream returned before status checks finish: %v", err)
+	}
+	defer resp.Body.Close()
+
+	scanner := bufio.NewScanner(resp.Body)
+	if !scanner.Scan() {
+		t.Fatalf("read initial stream line: %v", scanner.Err())
+	}
+	if got, want := scanner.Text(), ": connected"; got != want {
+		t.Fatalf("initial stream line = %q, want %q", got, want)
 	}
 }
 

@@ -34,7 +34,7 @@ const ConfigTools = ({ onExport, onImport, onOpenAuditLogs }: ConfigToolsProps) 
     const file = e.target.files?.[0];
     if (file) {
       onImport(file);
-      // 重置 input 值，允许导入相同文件
+      // Reset the input so the same file can be imported again.
       e.target.value = '';
     }
     setIsOpen(false);
@@ -45,8 +45,8 @@ const ConfigTools = ({ onExport, onImport, onOpenAuditLogs }: ConfigToolsProps) 
       <button
         onClick={toggleMenu}
         className="chassis-icon-button config-tools-button p-2 transition-colors"
-        aria-label="配置工具"
-        title="配置工具"
+        aria-label="Config tools"
+        title="Config tools"
       >
         <FontAwesomeIcon icon={faTools} />
       </button>
@@ -58,21 +58,21 @@ const ConfigTools = ({ onExport, onImport, onOpenAuditLogs }: ConfigToolsProps) 
             className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
           >
             <FontAwesomeIcon icon={faDownload} className="mr-2" />
-            <span>导出配置</span>
+            <span>Export config</span>
           </button>
           <button
             onClick={handleImportClick}
             className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
           >
             <FontAwesomeIcon icon={faUpload} className="mr-2" />
-            <span>导入配置</span>
+            <span>Import config</span>
           </button>
           <button
             onClick={handleOpenAuditLogs}
             className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
           >
             <FontAwesomeIcon icon={faClockRotateLeft} className="mr-2" />
-            <span>操作记录</span>
+            <span>Activity log</span>
           </button>
           <input
             type="file"

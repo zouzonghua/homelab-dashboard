@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -234,7 +235,7 @@ func importConfig(w http.ResponseWriter, r *http.Request, st *store.Store) {
 		Action:       "config.import",
 		ResourceType: "config",
 		ResourceID:   "1",
-		Summary:      "导入仪表盘配置",
+		Summary:      "Imported dashboard config",
 		BeforeJSON:   mustJSON(before),
 		AfterJSON:    mustJSON(imported),
 	})
@@ -304,7 +305,7 @@ func createCategory(w http.ResponseWriter, r *http.Request, st *store.Store) {
 		Action:       "category.create",
 		ResourceType: "category",
 		ResourceID:   strconv.FormatInt(created.ID, 10),
-		Summary:      fmt.Sprintf("创建分类 %s", created.Name),
+		Summary:      fmt.Sprintf("Created category %s", created.Name),
 		AfterJSON:    mustJSON(created),
 	})
 	writeJSONStatus(w, http.StatusCreated, created)
@@ -330,7 +331,7 @@ func updateCategory(w http.ResponseWriter, r *http.Request, st *store.Store, id 
 			Action:       "category.update",
 			ResourceType: "category",
 			ResourceID:   strconv.FormatInt(id, 10),
-			Summary:      fmt.Sprintf("更新分类 %s", updated.Name),
+			Summary:      fmt.Sprintf("Updated category %s", updated.Name),
 			BeforeJSON:   mustJSON(before),
 			AfterJSON:    mustJSON(updated),
 		})
@@ -352,7 +353,7 @@ func deleteCategory(w http.ResponseWriter, r *http.Request, st *store.Store, id 
 		Action:       "category.delete",
 		ResourceType: "category",
 		ResourceID:   strconv.FormatInt(id, 10),
-		Summary:      fmt.Sprintf("删除分类 %s", before.Name),
+		Summary:      fmt.Sprintf("Deleted category %s", before.Name),
 		BeforeJSON:   mustJSON(before),
 	})
 	w.WriteHeader(http.StatusNoContent)
@@ -418,7 +419,7 @@ func createService(w http.ResponseWriter, r *http.Request, st *store.Store) {
 		Action:       "service.create",
 		ResourceType: "service",
 		ResourceID:   strconv.FormatInt(created.ID, 10),
-		Summary:      fmt.Sprintf("创建服务 %s", created.Name),
+		Summary:      fmt.Sprintf("Created service %s", created.Name),
 		AfterJSON:    mustJSON(created),
 	})
 	writeJSONStatus(w, http.StatusCreated, created)
@@ -444,7 +445,7 @@ func updateService(w http.ResponseWriter, r *http.Request, st *store.Store, id i
 			Action:       "service.update",
 			ResourceType: "service",
 			ResourceID:   strconv.FormatInt(id, 10),
-			Summary:      fmt.Sprintf("更新服务 %s", updated.Name),
+			Summary:      fmt.Sprintf("Updated service %s", updated.Name),
 			BeforeJSON:   mustJSON(before),
 			AfterJSON:    mustJSON(updated),
 		})
@@ -466,7 +467,7 @@ func deleteService(w http.ResponseWriter, r *http.Request, st *store.Store, id i
 		Action:       "service.delete",
 		ResourceType: "service",
 		ResourceID:   strconv.FormatInt(id, 10),
-		Summary:      fmt.Sprintf("删除服务 %s", before.Name),
+		Summary:      fmt.Sprintf("Deleted service %s", before.Name),
 		BeforeJSON:   mustJSON(before),
 	})
 	w.WriteHeader(http.StatusNoContent)
@@ -492,6 +493,11 @@ func getV1StatusStream(w http.ResponseWriter, r *http.Request, st *store.Store) 
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
+	if err := writeStatusStreamReady(w); err != nil {
+		log.Printf("[status] v1 stream ready write failed: %v", err)
+		return
+	}
+	flusher.Flush()
 
 	writeSnapshot := func() bool {
 		results, err := loadV1StatusResults(r.Context(), st)
@@ -525,6 +531,11 @@ func getV1StatusStream(w http.ResponseWriter, r *http.Request, st *store.Store) 
 	}
 }
 
+func writeStatusStreamReady(w io.Writer) error {
+	_, err := io.WriteString(w, ": connected\n\n")
+	return err
+}
+
 func loadV1StatusResults(ctx context.Context, st *store.Store) (map[string]monitor.Result, error) {
 	services, err := st.ListServices(ctx)
 	if err != nil {
@@ -533,17 +544,31 @@ func loadV1StatusResults(ctx context.Context, st *store.Store) (map[string]monit
 
 	checker := monitor.NewChecker(3 * time.Second)
 	results := map[string]monitor.Result{}
+	var mutex sync.Mutex
+	var checks sync.WaitGroup
+
 	for _, service := range services {
 		if !service.MonitorEnabled {
 			continue
 		}
-		monitorURL := service.MonitorURL
-		if monitorURL == "" {
-			monitorURL = service.URL
-		}
-		result := checker.Check(ctx, service.Name, monitorURL)
-		results[strconv.FormatInt(service.ID, 10)] = result
+		service := service
+		checks.Add(1)
+		go func() {
+			defer checks.Done()
+
+			monitorURL := service.MonitorURL
+			if monitorURL == "" {
+				monitorURL = service.URL
+			}
+			result := checker.Check(ctx, service.Name, monitorURL)
+
+			mutex.Lock()
+			results[strconv.FormatInt(service.ID, 10)] = result
+			mutex.Unlock()
+		}()
 	}
+	checks.Wait()
+
 	return results, nil
 }
 

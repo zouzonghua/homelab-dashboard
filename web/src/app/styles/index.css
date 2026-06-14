@@ -15,7 +15,7 @@ html, body {
 
 
 
-/* 自定义动画 */
+/* Custom animations */
 @keyframes fadeIn {
   from {
     opacity: 0;

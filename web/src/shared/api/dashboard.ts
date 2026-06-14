@@ -6,7 +6,7 @@ import type {
   CategoryUpdateRequest,
   DashboardSettings,
   GetStatusResponse,
-  ImportConfigData,
+  ImportConfigRequest,
   Service,
   ServiceCreateRequest,
   ServiceListResponse,
@@ -14,29 +14,63 @@ import type {
 } from './contract'
 import { apiClient } from './http'
 
-type CategoryPayloadSource = CategoryCreateRequest & Partial<Pick<Category, 'id' | 'order'>>
-type ServicePayloadSource = Pick<
+const DEFAULT_CATEGORY_ICON = 'fa-solid fa-folder'
+
+type CategoryWriteSource = CategoryCreateRequest & Partial<Pick<Category, 'id' | 'order'>>
+type ServiceWriteSource = Pick<
   ServiceCreateRequest,
   'name' | 'logo' | 'url' | 'target' | 'monitorEnabled' | 'monitorUrl'
 > &
-  Partial<Pick<Service, 'id' | 'categoryId' | 'order'>> & {
-    logoUrl?: string
-    serviceUrl?: string
-  }
+  Partial<Pick<Service, 'id' | 'categoryId' | 'order'>>
 type ServiceTarget = NonNullable<ServiceCreateRequest['target']>
-type ImportConfigRequest = ImportConfigData['body']
 
-function toServiceTarget(target: ServicePayloadSource['target']): ServiceTarget {
+function resourceUrl(resource: 'categories' | 'services', id: CategoryWriteSource['id'] | ServiceWriteSource['id']): string {
+  return `/api/v1/${resource}/${encodeURIComponent(String(id))}`
+}
+
+async function listResponseData<T extends { data: unknown }>(url: string): Promise<T['data']> {
+  const response = await apiClient.get<T>(url)
+  return response.data
+}
+
+function toServiceTarget(target: ServiceWriteSource['target']): ServiceTarget {
   return target === '_self' ? '_self' : '_blank'
 }
 
-function toServicePayload(service: ServicePayloadSource): ServiceUpdateRequest {
+function toCreateCategoryRequest(category: CategoryWriteSource): CategoryCreateRequest {
+  return {
+    name: category.name,
+    icon: category.icon ?? DEFAULT_CATEGORY_ICON,
+  }
+}
+
+function toUpdateCategoryRequest(category: CategoryWriteSource): CategoryUpdateRequest {
+  return {
+    name: category.name,
+    icon: category.icon,
+    order: category.order,
+  }
+}
+
+function toCreateServiceRequest(categoryId: Category['id'], service: ServiceWriteSource): ServiceCreateRequest {
+  return {
+    categoryId: Number(categoryId),
+    name: service.name,
+    logo: service.logo,
+    url: service.url,
+    target: toServiceTarget(service.target),
+    monitorUrl: service.monitorUrl,
+    monitorEnabled: service.monitorEnabled,
+  }
+}
+
+function toUpdateServiceRequest(service: ServiceWriteSource): ServiceUpdateRequest {
   return {
     categoryId: service.categoryId == null ? undefined : Number(service.categoryId),
     order: service.order,
     name: service.name,
-    logo: service.logo ?? service.logoUrl ?? '',
-    url: service.url ?? service.serviceUrl ?? '',
+    logo: service.logo,
+    url: service.url,
     target: service.target == null ? undefined : toServiceTarget(service.target),
     monitorUrl: service.monitorUrl,
     monitorEnabled: service.monitorEnabled,
@@ -45,46 +79,20 @@ function toServicePayload(service: ServicePayloadSource): ServiceUpdateRequest {
 
 export const dashboardApi = {
   getSettings: () => apiClient.get<DashboardSettings>('/api/v1/dashboard'),
-  listCategories: async () => {
-    const response = await apiClient.get<CategoryListResponse>('/api/v1/categories')
-    return response.data
-  },
-  listServices: async () => {
-    const response = await apiClient.get<ServiceListResponse>('/api/v1/services')
-    return response.data
-  },
-  createCategory: (category: CategoryPayloadSource) =>
-    apiClient.post<Category>('/api/v1/categories', {
-      name: category.name,
-      icon: category.icon ?? 'fa-solid fa-folder',
-    } satisfies CategoryCreateRequest),
-  updateCategory: (category: CategoryPayloadSource) =>
-    apiClient.patch<Category>(`/api/v1/categories/${encodeURIComponent(String(category.id))}`, {
-      name: category.name,
-      icon: category.icon,
-      order: category.order,
-    } satisfies CategoryUpdateRequest),
-  deleteCategory: (category: CategoryPayloadSource) =>
-    apiClient.delete<null>(`/api/v1/categories/${encodeURIComponent(String(category.id))}`),
-  createService: (categoryId: Category['id'], service: ServicePayloadSource) =>
-    apiClient.post<Service>('/api/v1/services', {
-      categoryId: Number(categoryId),
-      name: service.name,
-      logo: service.logo ?? service.logoUrl ?? '',
-      url: service.url ?? service.serviceUrl ?? '',
-      target: toServiceTarget(service.target),
-      monitorUrl: service.monitorUrl,
-      monitorEnabled: service.monitorEnabled,
-    } satisfies ServiceCreateRequest),
-  updateService: (service: ServicePayloadSource) =>
-    apiClient.patch<Service>(`/api/v1/services/${encodeURIComponent(String(service.id))}`, toServicePayload(service)),
-  deleteService: (service: ServicePayloadSource) =>
-    apiClient.delete<null>(`/api/v1/services/${encodeURIComponent(String(service.id))}`),
+  listCategories: () => listResponseData<CategoryListResponse>('/api/v1/categories'),
+  listServices: () => listResponseData<ServiceListResponse>('/api/v1/services'),
+  createCategory: (category: CategoryWriteSource) =>
+    apiClient.post<Category>('/api/v1/categories', toCreateCategoryRequest(category)),
+  updateCategory: (category: CategoryWriteSource) =>
+    apiClient.patch<Category>(resourceUrl('categories', category.id), toUpdateCategoryRequest(category)),
+  deleteCategory: (category: CategoryWriteSource) => apiClient.delete<null>(resourceUrl('categories', category.id)),
+  createService: (categoryId: Category['id'], service: ServiceWriteSource) =>
+    apiClient.post<Service>('/api/v1/services', toCreateServiceRequest(categoryId, service)),
+  updateService: (service: ServiceWriteSource) =>
+    apiClient.patch<Service>(resourceUrl('services', service.id), toUpdateServiceRequest(service)),
+  deleteService: (service: ServiceWriteSource) => apiClient.delete<null>(resourceUrl('services', service.id)),
   getStatus: () => apiClient.get<GetStatusResponse>('/api/v1/status'),
-  listAuditLogs: async () => {
-    const response = await apiClient.get<AuditLogListResponse>('/api/v1/audit-logs?limit=50')
-    return response.data
-  },
+  listAuditLogs: () => listResponseData<AuditLogListResponse>('/api/v1/audit-logs?limit=50'),
   exportConfig: () => apiClient.blob({ url: '/api/v1/export', method: 'GET' }),
   importConfig: (config: ImportConfigRequest) => apiClient.put('/api/v1/import', config),
 }

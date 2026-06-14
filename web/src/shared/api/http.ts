@@ -27,7 +27,7 @@ export class ApiError extends Error {
   response: Response
 
   constructor(config: HttpRequestConfig, response: Response) {
-    super(`${config.url} 请求失败: ${response.status}`)
+    super(`${config.url} request failed: ${response.status}`)
     this.name = 'ApiError'
     this.status = response.status
     this.url = config.url

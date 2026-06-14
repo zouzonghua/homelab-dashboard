@@ -5,9 +5,9 @@ import { useTheme, type Theme } from './theme'
 const themeCycle: Theme[] = ['system', 'light', 'dark']
 
 const themeMeta: Record<Theme, { label: string; nextLabel: string; icon: typeof faDesktop }> = {
-  light: { label: '浅色', nextLabel: '深色', icon: faSun },
-  dark: { label: '深色', nextLabel: '跟随系统', icon: faMoon },
-  system: { label: '跟随系统', nextLabel: '浅色', icon: faDesktop },
+  light: { label: 'Light', nextLabel: 'Dark', icon: faSun },
+  dark: { label: 'Dark', nextLabel: 'System', icon: faMoon },
+  system: { label: 'System', nextLabel: 'Light', icon: faDesktop },
 }
 
 const getNextTheme = (theme: Theme) => {
@@ -24,8 +24,8 @@ const ThemeToggle = () => {
     <button
       className="theme-toggle-button chassis-icon-button"
       onClick={() => setTheme(getNextTheme(theme))}
-      aria-label={`当前主题：${current.label}，点击切换到${next.label}`}
-      title={`当前：${current.label}，点击切换到${next.label}`}
+      aria-label={`Current theme: ${current.label}. Click to switch to ${next.label}`}
+      title={`Current: ${current.label}. Click to switch to ${next.label}`}
     >
       <span className="theme-toggle-button__icon">
         <FontAwesomeIcon icon={current.icon} />

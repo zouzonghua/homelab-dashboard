@@ -1,0 +1,221 @@
+# Homelab Dashboard
+
+[![Docker Pulls](https://img.shields.io/docker/pulls/zouzonghua/homelab-dashboard)](https://hub.docker.com/r/zouzonghua/homelab-dashboard)
+[![GitHub release](https://img.shields.io/github/v/release/zouzonghua/homelab-dashboard)](https://github.com/zouzonghua/homelab-dashboard/releases)
+[![License](https://img.shields.io/github/license/zouzonghua/homelab-dashboard)](LICENSE)
+
+[English](README.md) | 简体中文
+
+一个现代化的家庭服务器仪表盘，帮助你更好地管理和监控你的家庭服务器。
+
+## 在线预览
+
+[https://homelab.zouzonghua.cn](https://homelab.zouzonghua.cn)
+
+## 界面预览
+
+![Homelab Dashboard 暗色模式](assets/readme/dashboard-dark.png)
+
+![Homelab Dashboard 浅色模式](assets/readme/dashboard-light.png)
+
+## 功能特点
+
+- [x] 🎯 一键访问常用服务
+- [x] 🌙 支持暗黑模式
+- [x] 📱 响应式设计，支持移动端
+- [x] 📄 支持导入导出配置
+- [x] 🔧 支持编辑服务
+- [x] 🔄 实时服务状态显示
+- [x] 🐳 Docker 部署
+- [ ] 📊 系统资源监控 (TODO)
+- [ ] 🔐 安全的身份验证 (TODO)
+
+## 快速开始
+
+确保你的系统已安装 Node.js、Go 和包管理器。
+
+```bash
+# 克隆项目
+git clone https://github.com/zouzonghua/homelab-dashboard.git
+
+# 进入项目目录
+cd homelab-dashboard
+
+# 安装前端依赖
+npm --prefix web install
+
+# 启动前端开发服务器
+npm --prefix web run dev
+
+# 另开一个终端启动本地 Go API
+npm --prefix web run dev:api
+
+# 启动 Go API + React 构建产物
+npm --prefix web run e2e:server
+
+# 构建生产版本
+npm --prefix web run build
+
+# 预览生产构建
+npm --prefix web run preview
+```
+
+## 后端与数据持久化
+
+项目现在提供 Go API 和 SQLite 持久化：
+
+- OpenAPI v1 契约：`api/openapi.yaml`
+- 资源化 API v1：`/api/v1/dashboard`、`/api/v1/categories`、`/api/v1/services`、`/api/v1/status`
+- 配置导入导出 API：`GET /api/v1/export`、`PUT /api/v1/import`
+- 默认数据库路径：`data/homelab.db`
+- 默认 seed：后端内置 `internal/config/default-dashboard.json`
+- 默认静态资源目录：`web/dist`
+- 默认端口：`8080`
+
+可通过环境变量覆盖：
+
+```bash
+HOMELAB_DB_PATH=.tmp/homelab.db HOMELAB_STATIC_DIR=web/dist PORT=8080 go run ./cmd/server
+```
+
+首次启动时，如果 SQLite 为空，会从后端内置 seed 初始化 dashboard/categories/services。需要覆盖默认 seed 时，设置 `HOMELAB_SEED_PATH=/path/to/dashboard.json`。
+
+本地开发不需要 Docker。常规调试方式是两个终端：
+
+```bash
+# 推荐：一个命令同时启动 Go API 和 Vite 前端
+make dev
+```
+
+也可以拆成两个终端：
+
+```bash
+# 终端 1：Go API，监听 8080
+go run ./cmd/server
+
+# 终端 2：Vite 前端，监听 5173，并把 /api 代理到 8080
+npm --prefix web run dev
+```
+
+访问 `http://localhost:5173`。Docker 主要用于发布打包或验证容器部署。
+
+## 安装部署
+
+### 手动部署
+
+1. 构建项目
+
+```bash
+npm --prefix web run build
+```
+
+2. 将 `web/dist` 目录下的文件部署到你的 Web 服务器
+
+### Docker 部署
+
+```bash
+# 使用已发布镜像
+docker run -d \
+  --name homelab-dashboard \
+  -p 8080:8080 \
+  -v "$(pwd)/data:/data" \
+  --restart unless-stopped \
+  zouzonghua/homelab-dashboard:latest
+```
+
+也可以使用 compose：
+
+```bash
+docker compose -f deploy/compose.yml up -d
+```
+
+本地验证镜像构建：
+
+```bash
+docker compose -f deploy/compose.yml up --build
+```
+
+访问 `http://localhost:8080`，SQLite 数据会保存在本地 `data/homelab.db` 中，自动获取的 favicon 缓存在 `data/icons/`，方便用 DBeaver 等工具查看。
+
+### Docker 镜像发布
+
+GitHub Actions 会在以下场景发布镜像到 Docker Hub：
+
+- 推送到 `main`：发布 `zouzonghua/homelab-dashboard:latest`
+- 推送 `v*.*.*` 标签或发布 GitHub Release：发布 `1.2.3`、`v1.2.3`、`1.2` 等版本标签
+- 手动触发 `Publish Docker image` workflow
+
+发布流程会构建 `linux/amd64` 和 `linux/arm64` 双架构镜像，并在 GitHub Actions summary 中输出镜像 digest 和 tag 列表。测试与类型检查由 CI workflow 负责，Docker 发布 workflow 只负责构建和推送镜像。
+
+仓库需要配置 Secrets：
+
+- `DOCKER_HUB_USERNAME`
+- `DOCKER_HUB_ACCESS_TOKEN`
+
+## 测试
+
+```bash
+# OpenAPI YAML 解析校验
+ruby -e "require 'yaml'; YAML.load_file('api/openapi.yaml')"
+
+# Go 单元/集成测试
+go test ./cmd/... ./internal/...
+
+# 前端单元测试
+npm --prefix web test
+
+# E2E 测试
+npm --prefix web run test:e2e
+```
+
+## 配置说明
+
+配置持久化在 SQLite 中。你可以通过 `GET /api/v1/export` 导出兼容旧格式的 JSON，通过 `PUT /api/v1/import` 导入并替换当前 SQLite 配置：
+
+```javascript
+{
+  "title": "zonghua's homelab dashboard", // 标题
+  "columns": "4", // 列数
+  "items": [
+    // 你的服务配置
+    {
+      "name": "Media", // 服务名称
+      "icon": "fa-solid fa-photo-film", // 图标
+      "list": [
+        {
+          "name": "Jellyfin", // 服务名称
+          "logo": "", // 留空自动获取 favicon，也可填写网络图标 URL
+          "url": "http://192.168.1.203:8096", // 链接
+          "target": "_blank" // 打开方式
+        }
+      ]
+    },
+  ]
+}
+```
+
+## 技术栈
+
+- 🚀 [Vite](https://vitejs.dev/) - 下一代前端构建工具
+- ⚛️ [React 18](https://reactjs.org/) - 用户界面构建库
+- 🎨 [TailwindCSS](https://tailwindcss.com/) - 实用优先的 CSS 框架
+- 🔍 [ESLint](https://eslint.org/) - 代码质量检查工具
+- 🎯 [PostCSS](https://postcss.org/) - CSS 转换工具
+- 📦 [Autoprefixer](https://github.com/postcss/autoprefixer) - 自动添加 CSS 前缀
+- 🎁 [Font Awesome](https://fontawesome.com/) - 图标库
+
+## 贡献指南
+
+欢迎提交 Pull Request 或创建 Issue！
+
+1. Fork 本仓库
+2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
+3. 提交你的更改 (`git commit -m 'Add some AmazingFeature'`)
+4. 推送到分支 (`git push origin feature/AmazingFeature`)
+5. 创建一个 Pull Request
+
+## 开源协议
+
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/zouzonghua/homelab-dashboard/blob/main/LICENSE)
+
+Copyright (c) 2021 - Now zouzonghua

@@ -10,24 +10,24 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  // 主题状态：'dark', 'light', 'system'
+  // Theme state: 'dark', 'light', 'system'.
   const [theme, setTheme] = useState<Theme>(() => {
-    // 尝试从本地存储获取主题设置
+    // Try to read the saved theme from local storage.
     const storedTheme = localStorage.getItem('theme');
     return storedTheme === 'dark' || storedTheme === 'light' || storedTheme === 'system'
       ? storedTheme
       : 'system';
   });
 
-  // 应用主题到 HTML 元素
+  // Apply the theme to the HTML element.
   useEffect(() => {
     const html = document.documentElement;
     
-    // 移除现有的类
+    // Remove existing theme classes.
     html.classList.remove('dark', 'light');
 
     if (theme === 'system') {
-      // 使用系统偏好
+      // Use the system preference.
       const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (isDarkMode) {
         html.classList.add('dark');
@@ -35,15 +35,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         html.classList.add('light');
       }
     } else {
-      // 直接应用所选主题
+      // Apply the selected theme directly.
       html.classList.add(theme);
     }
 
-    // 保存到本地存储
+    // Save the theme to local storage.
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // 监听系统主题变化（仅当选择'system'模式时重要）
+  // Listen for system theme changes when system mode is selected.
   useEffect(() => {
     if (theme !== 'system') return;
 
