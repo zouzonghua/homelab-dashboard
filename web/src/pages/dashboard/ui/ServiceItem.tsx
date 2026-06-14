@@ -116,8 +116,8 @@ const ServiceItem = ({ service, onOpenEdit, isEditMode, dragHandleProps, status 
   }
 
   const getStatusTitle = () => {
-    if (!service.monitorEnabled) return '未启用状态检测';
-    if (!status) return '状态检测中';
+    if (!service.monitorEnabled) return 'Health checks disabled';
+    if (!status) return 'Checking status';
     if (status.status === 'up') {
       return `UP · ${status.responseTimeMs || 0}ms`;
     }
@@ -150,7 +150,7 @@ const ServiceItem = ({ service, onOpenEdit, isEditMode, dragHandleProps, status 
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       tabIndex={0}
-      aria-label={`访问 ${service.name}`}
+      aria-label={`Visit ${service.name}`}
       role="button"
     >
       {service.monitorEnabled && (
@@ -158,18 +158,18 @@ const ServiceItem = ({ service, onOpenEdit, isEditMode, dragHandleProps, status 
           <span
             className={getStatusClass()}
             style={getStatusStyle()}
-            aria-label={`${service.name} 服务状态 ${status?.status || 'unknown'}`}
+            aria-label={`${service.name} service status ${status?.status || 'unknown'}`}
           />
           <span className="drive-bay__latency">{getStatusLatency()}</span>
         </span>
       )}
-      {/* Logo - 编辑模式下可拖拽 */}
+      {/* Logo doubles as the drag handle in edit mode. */}
       <span
         {...(isEditMode ? dragHandleProps : {})}
         className={`drive-bay__logo w-8 h-8 xl:w-12 xl:h-12 mr-2 xl:mr-4 flex flex-none items-center justify-center ${
           isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
         }`}
-        title={isEditMode ? '拖拽排序' : ''}
+        title={isEditMode ? 'Drag to reorder' : ''}
         onClick={(e: MouseEvent<HTMLSpanElement>) => isEditMode && e.stopPropagation()}
       >
         <img
@@ -185,12 +185,12 @@ const ServiceItem = ({ service, onOpenEdit, isEditMode, dragHandleProps, status 
       </span>
       <p className="drive-bay__name min-w-0 flex-1 font-bold text-base truncate">{service.name}</p>
 
-      {/* 编辑按钮 - 仅在编辑模式和悬停时显示 */}
+      {/* Edit button, only visible in edit mode while hovered. */}
       {isEditMode && isHovered && (
         <button
           className="drive-bay__edit absolute top-2 right-14 p-1"
           onClick={handleEditClick}
-          aria-label={`编辑 ${service.name}`}
+          aria-label={`Edit ${service.name}`}
         >
           <FontAwesomeIcon icon={faEdit} />
         </button>

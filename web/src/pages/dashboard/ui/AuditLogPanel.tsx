@@ -24,23 +24,23 @@ const AuditLogPanel = ({ logs, loading, error, onRefresh, onClose }: AuditLogPan
       <section className="chassis-modal audit-log-panel w-full max-w-3xl mx-4" onClick={(event) => event.stopPropagation()}>
         <header className="audit-log-panel__header">
           <div>
-            <h2>操作记录</h2>
-            <p>最近 50 条配置变更</p>
+            <h2>Activity log</h2>
+            <p>Last 50 config changes</p>
           </div>
           <div className="flex items-center gap-2">
-            <button className="chassis-icon-button audit-log-panel__button" onClick={onRefresh} aria-label="刷新操作记录" title="刷新">
+            <button className="chassis-icon-button audit-log-panel__button" onClick={onRefresh} aria-label="Refresh activity log" title="Refresh">
               <FontAwesomeIcon icon={faRotateRight} />
             </button>
-            <button className="chassis-icon-button audit-log-panel__button" onClick={onClose} aria-label="关闭操作记录" title="关闭">
+            <button className="chassis-icon-button audit-log-panel__button" onClick={onClose} aria-label="Close activity log" title="Close">
               <FontAwesomeIcon icon={faXmark} />
             </button>
           </div>
         </header>
 
         <div className="audit-log-panel__body">
-          {loading && <div className="audit-log-panel__empty">加载中</div>}
+          {loading && <div className="audit-log-panel__empty">Loading</div>}
           {!loading && error && <div className="audit-log-panel__error">{error}</div>}
-          {!loading && !error && logs.length === 0 && <div className="audit-log-panel__empty">暂无操作记录</div>}
+          {!loading && !error && logs.length === 0 && <div className="audit-log-panel__empty">No activity yet</div>}
           {!loading && !error && logs.length > 0 && (
             <ul className="audit-log-list">
               {logs.map((log) => (

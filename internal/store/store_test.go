@@ -266,7 +266,7 @@ func TestAuditLogsAppendAndList(t *testing.T) {
 		Action:       "category.create",
 		ResourceType: "category",
 		ResourceID:   "1",
-		Summary:      "创建分类 Media",
+		Summary:      "Created category Media",
 		AfterJSON:    `{"name":"Media"}`,
 	})
 	if err != nil {
@@ -276,7 +276,7 @@ func TestAuditLogsAppendAndList(t *testing.T) {
 		Action:       "service.update",
 		ResourceType: "service",
 		ResourceID:   "2",
-		Summary:      "更新服务 Jellyfin",
+		Summary:      "Updated service Jellyfin",
 		BeforeJSON:   `{"name":"Jellyfin"}`,
 		AfterJSON:    `{"name":"Jellyfin 2"}`,
 	})

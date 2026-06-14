@@ -38,7 +38,7 @@ const getCategoryLed = (category: CategoryWithServices, serviceStatus: ServiceSt
   if (monitored.length === 0) {
     return {
       className: 'status-port-pending',
-      title: `${category.name} · 未启用检测`,
+      title: `${category.name} · Monitoring disabled`,
     }
   }
 
@@ -91,7 +91,7 @@ const Header = ({
     <div className="chassis-header head w-screen flex justify-center">
       <div className="chassis-header__container head__container max-w-screen-xl w-full py-3.5 h-24 flex">
         <div className="head__logo flex flex-none items-center">
-          <a className="chassis-avatar" href="https://zouzonghua.cn/" tabIndex={0} aria-label="访问个人网站">
+          <a className="chassis-avatar" href="https://zouzonghua.cn/" tabIndex={0} aria-label="Visit personal website">
             <img className="h-12 w-12 md:h-14 md:w-14 rounded-full" src={Avatar} alt="logo" />
           </a>
         </div>
@@ -118,12 +118,12 @@ const Header = ({
             onOpenAuditLogs={onOpenAuditLogs}
           />
 
-          {/* 编辑模式切换按钮 */}
+          {/* Edit mode toggle. */}
           <button
             onClick={onToggleEditMode}
             className={`chassis-icon-button p-2 transition-all`}
-            aria-label={isEditMode ? "退出编辑模式" : "进入编辑模式"}
-            title={isEditMode ? "退出编辑模式" : "进入编辑模式"}
+            aria-label={isEditMode ? "Exit edit mode" : "Enter edit mode"}
+            title={isEditMode ? "Exit edit mode" : "Enter edit mode"}
           >
             <FontAwesomeIcon
               icon={isEditMode ? faCheck : faEdit}
@@ -131,13 +131,13 @@ const Header = ({
             />
           </button>
 
-          {/* 添加分类按钮 - 仅在编辑模式下显示 */}
+          {/* Add category button, only visible in edit mode. */}
           {isEditMode && (
             <button
               onClick={onAddCategory}
               className="chassis-icon-button p-2 transition-colors"
-              aria-label="添加新分类"
-              title="添加新分类"
+              aria-label="Add new category"
+              title="Add new category"
             >
               <FontAwesomeIcon icon={faPlus} className="text-xl" />
             </button>

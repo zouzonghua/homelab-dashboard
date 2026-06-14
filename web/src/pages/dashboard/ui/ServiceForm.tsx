@@ -44,7 +44,7 @@ export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCan
   return (
     <form onSubmit={handleSubmit}>
       <div className="mb-3">
-        <label htmlFor="service-name" className="block text-sm font-medium mb-1">名称</label>
+        <label htmlFor="service-name" className="block text-sm font-medium mb-1">Name</label>
         <input
           type="text"
           id="service-name"
@@ -52,13 +52,13 @@ export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCan
           value={formData.name}
           onChange={handleChange}
           className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
-          placeholder="例如：Jellyfin"
+          placeholder="Example: Jellyfin"
           required
         />
       </div>
 
       <div className="mb-3">
-        <label htmlFor="service-logo" className="block text-sm font-medium mb-1">Logo 路径</label>
+        <label htmlFor="service-logo" className="block text-sm font-medium mb-1">Logo path</label>
         <input
           type="text"
           id="service-logo"
@@ -66,11 +66,11 @@ export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCan
           value={formData.logo}
           onChange={handleChange}
           className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
-          placeholder="留空则自动获取 favicon"
+          placeholder="Leave blank to fetch the favicon automatically"
         />
         {!initialValue && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            本地图标、远程 URL，或留空自动获取 favicon
+            Use a local icon, remote URL, or leave blank to fetch the favicon automatically
           </p>
         )}
       </div>
@@ -90,7 +90,7 @@ export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCan
       </div>
 
       <div className="mb-4">
-        <label htmlFor="service-target" className="block text-sm font-medium mb-1">打开方式</label>
+        <label htmlFor="service-target" className="block text-sm font-medium mb-1">Open behavior</label>
         <select
           id="service-target"
           name="target"
@@ -98,8 +98,8 @@ export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCan
           onChange={handleChange}
           className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
         >
-          <option value="_blank">新窗口 (_blank)</option>
-          <option value="_self">当前窗口 (_self)</option>
+          <option value="_blank">New tab (_blank)</option>
+          <option value="_self">Same tab (_self)</option>
         </select>
       </div>
 
@@ -112,13 +112,13 @@ export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCan
             onChange={handleChange}
             className="rounded border-gray-300"
           />
-          <span>启用状态检测</span>
+          <span>Enable health checks</span>
         </label>
       </div>
 
       {formData.monitorEnabled && (
         <div className="mb-4">
-          <label htmlFor="service-monitor-url" className="block text-sm font-medium mb-1">检测 URL</label>
+          <label htmlFor="service-monitor-url" className="block text-sm font-medium mb-1">Health check URL</label>
           <input
             type="url"
             id="service-monitor-url"
@@ -126,7 +126,7 @@ export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCan
             value={formData.monitorUrl}
             onChange={handleChange}
             className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
-            placeholder="留空则使用服务 URL"
+            placeholder="Leave blank to use the service URL"
           />
         </div>
       )}
@@ -139,7 +139,7 @@ export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCan
             className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
           >
             <FontAwesomeIcon icon={faTrash} className="mr-1" />
-            删除
+            Delete
           </button>
         )}
 
@@ -150,7 +150,7 @@ export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCan
             className="px-4 py-2 bg-gray-200 dark:bg-dark-600 rounded-md hover:bg-gray-300 dark:hover:bg-dark-500 transition-colors"
           >
             <FontAwesomeIcon icon={faTimes} className="mr-1" />
-            取消
+            Cancel
           </button>
           <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
             <FontAwesomeIcon icon={onDelete ? faSave : faPlus} className="mr-1" />

@@ -12,18 +12,18 @@ describe('CategoryForm', () => {
 
     render(
       <CategoryForm
-        title="编辑分类"
+        title="Edit category"
         initialValue={{ name: 'Media', icon: 'fa-solid fa-film' }}
-        submitLabel="保存"
+        submitLabel="Save"
         onSubmit={onSubmit}
         onCancel={vi.fn()}
       />,
     )
 
-    expect((screen.getByLabelText('分类名称') as HTMLInputElement).value).toBe('Media')
+    expect((screen.getByLabelText('Category name') as HTMLInputElement).value).toBe('Media')
 
-    fireEvent.change(screen.getByLabelText('分类名称'), { target: { value: 'Media Apps' } })
-    fireEvent.click(screen.getByRole('button', { name: /保存/ }))
+    fireEvent.change(screen.getByLabelText('Category name'), { target: { value: 'Media Apps' } })
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }))
 
     expect(onSubmit).toHaveBeenCalledWith({
       name: 'Media Apps',

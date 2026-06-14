@@ -18,18 +18,18 @@ describe('ServiceForm', () => {
           monitorEnabled: true,
           monitorUrl: 'https://jellyfin.example/health',
         }}
-        submitLabel="保存"
+        submitLabel="Save"
         onSubmit={vi.fn()}
         onCancel={vi.fn()}
       />,
     )
 
-    expect((screen.getByLabelText('名称') as HTMLInputElement).value).toBe('Jellyfin')
-    expect((screen.getByLabelText('Logo 路径') as HTMLInputElement).value).toBe('/jellyfin.svg')
+    expect((screen.getByLabelText('Name') as HTMLInputElement).value).toBe('Jellyfin')
+    expect((screen.getByLabelText('Logo path') as HTMLInputElement).value).toBe('/jellyfin.svg')
     expect((screen.getByLabelText('URL') as HTMLInputElement).value).toBe('https://jellyfin.example')
-    expect((screen.getByLabelText('打开方式') as HTMLSelectElement).value).toBe('_self')
-    expect((screen.getByLabelText('启用状态检测') as HTMLInputElement).checked).toBe(true)
-    expect((screen.getByLabelText('检测 URL') as HTMLInputElement).value).toBe('https://jellyfin.example/health')
+    expect((screen.getByLabelText('Open behavior') as HTMLSelectElement).value).toBe('_self')
+    expect((screen.getByLabelText('Enable health checks') as HTMLInputElement).checked).toBe(true)
+    expect((screen.getByLabelText('Health check URL') as HTMLInputElement).value).toBe('https://jellyfin.example/health')
   })
 
   it('clears monitorUrl when monitoring is disabled before submit', () => {
@@ -45,14 +45,14 @@ describe('ServiceForm', () => {
           monitorEnabled: true,
           monitorUrl: 'https://jellyfin.example/health',
         }}
-        submitLabel="保存"
+        submitLabel="Save"
         onSubmit={onSubmit}
         onCancel={vi.fn()}
       />,
     )
 
-    fireEvent.click(screen.getByLabelText('启用状态检测'))
-    fireEvent.click(screen.getByRole('button', { name: /保存/ }))
+    fireEvent.click(screen.getByLabelText('Enable health checks'))
+    fireEvent.click(screen.getByRole('button', { name: /Save/ }))
 
     expect(onSubmit).toHaveBeenCalledWith({
       name: 'Jellyfin',

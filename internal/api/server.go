@@ -234,7 +234,7 @@ func importConfig(w http.ResponseWriter, r *http.Request, st *store.Store) {
 		Action:       "config.import",
 		ResourceType: "config",
 		ResourceID:   "1",
-		Summary:      "导入仪表盘配置",
+		Summary:      "Imported dashboard config",
 		BeforeJSON:   mustJSON(before),
 		AfterJSON:    mustJSON(imported),
 	})
@@ -304,7 +304,7 @@ func createCategory(w http.ResponseWriter, r *http.Request, st *store.Store) {
 		Action:       "category.create",
 		ResourceType: "category",
 		ResourceID:   strconv.FormatInt(created.ID, 10),
-		Summary:      fmt.Sprintf("创建分类 %s", created.Name),
+		Summary:      fmt.Sprintf("Created category %s", created.Name),
 		AfterJSON:    mustJSON(created),
 	})
 	writeJSONStatus(w, http.StatusCreated, created)
@@ -330,7 +330,7 @@ func updateCategory(w http.ResponseWriter, r *http.Request, st *store.Store, id 
 			Action:       "category.update",
 			ResourceType: "category",
 			ResourceID:   strconv.FormatInt(id, 10),
-			Summary:      fmt.Sprintf("更新分类 %s", updated.Name),
+			Summary:      fmt.Sprintf("Updated category %s", updated.Name),
 			BeforeJSON:   mustJSON(before),
 			AfterJSON:    mustJSON(updated),
 		})
@@ -352,7 +352,7 @@ func deleteCategory(w http.ResponseWriter, r *http.Request, st *store.Store, id 
 		Action:       "category.delete",
 		ResourceType: "category",
 		ResourceID:   strconv.FormatInt(id, 10),
-		Summary:      fmt.Sprintf("删除分类 %s", before.Name),
+		Summary:      fmt.Sprintf("Deleted category %s", before.Name),
 		BeforeJSON:   mustJSON(before),
 	})
 	w.WriteHeader(http.StatusNoContent)
@@ -418,7 +418,7 @@ func createService(w http.ResponseWriter, r *http.Request, st *store.Store) {
 		Action:       "service.create",
 		ResourceType: "service",
 		ResourceID:   strconv.FormatInt(created.ID, 10),
-		Summary:      fmt.Sprintf("创建服务 %s", created.Name),
+		Summary:      fmt.Sprintf("Created service %s", created.Name),
 		AfterJSON:    mustJSON(created),
 	})
 	writeJSONStatus(w, http.StatusCreated, created)
@@ -444,7 +444,7 @@ func updateService(w http.ResponseWriter, r *http.Request, st *store.Store, id i
 			Action:       "service.update",
 			ResourceType: "service",
 			ResourceID:   strconv.FormatInt(id, 10),
-			Summary:      fmt.Sprintf("更新服务 %s", updated.Name),
+			Summary:      fmt.Sprintf("Updated service %s", updated.Name),
 			BeforeJSON:   mustJSON(before),
 			AfterJSON:    mustJSON(updated),
 		})
@@ -466,7 +466,7 @@ func deleteService(w http.ResponseWriter, r *http.Request, st *store.Store, id i
 		Action:       "service.delete",
 		ResourceType: "service",
 		ResourceID:   strconv.FormatInt(id, 10),
-		Summary:      fmt.Sprintf("删除服务 %s", before.Name),
+		Summary:      fmt.Sprintf("Deleted service %s", before.Name),
 		BeforeJSON:   mustJSON(before),
 	})
 	w.WriteHeader(http.StatusNoContent)
