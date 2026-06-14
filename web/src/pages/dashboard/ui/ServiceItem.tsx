@@ -1,7 +1,8 @@
 import { useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
-import type { DragHandleProps, ServiceStatus, ServiceViewModel } from '../types'
+import type { ServiceStatus } from '@/shared/api'
+import type { DragHandleProps, ServiceViewModel } from '../model/dashboard'
 
 type ServiceItemProps = {
   service: ServiceViewModel

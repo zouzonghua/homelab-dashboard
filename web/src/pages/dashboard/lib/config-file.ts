@@ -2,8 +2,8 @@
  * 配置服务 - 处理配置的服务端导入和导出
  */
 
-import { dashboardApi, fetchDashboardConfig } from '../api'
-import type { ImportConfigData } from '../api/contract'
+import { dashboardApi, type ImportConfigData } from '@/shared/api'
+import { fetchDashboardConfig } from '../model/dashboard'
 
 const DEFAULT_EXPORT_FILENAME = 'homelab-dashboard-config.json'
 type ImportConfigRequest = ImportConfigData['body']

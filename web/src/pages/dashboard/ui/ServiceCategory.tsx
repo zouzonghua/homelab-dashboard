@@ -1,9 +1,10 @@
 import ServiceItem from './ServiceItem'
-import { getServiceStatus } from '../api'
+import { getServiceStatus } from '../model/dashboard'
+import type { ServiceStatus } from '@/shared/api'
 
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faEdit } from "@fortawesome/free-solid-svg-icons";
-import { getCategoryIcon } from '../icons/categoryIcons'
+import { getCategoryIcon } from './category-icons'
 
 import {
   DndContext,
@@ -25,10 +26,9 @@ import { CSS } from '@dnd-kit/utilities'
 import type {
   CategoryWithServices,
   DragHandleProps,
-  ServiceStatus,
   ServiceStatusMap,
   ServiceViewModel,
-} from '../types'
+} from '../model/dashboard'
 
 type SortableServiceItemProps = {
   service: ServiceViewModel

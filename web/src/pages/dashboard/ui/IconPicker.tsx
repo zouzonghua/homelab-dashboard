@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { categoryIconOptions } from '../icons/categoryIcons'
+import { categoryIconOptions } from './category-icons'
 
 type IconPickerProps = {
   value?: string

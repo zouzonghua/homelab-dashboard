@@ -17,7 +17,12 @@ import {
 } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import type { BivariantCallback, CategoryWithServices, ServiceStatusMap, ServiceViewModel } from '../types'
+import type {
+  BivariantCallback,
+  CategoryWithServices,
+  ServiceStatusMap,
+  ServiceViewModel,
+} from '../model/dashboard'
 
 type SortableCategoryItemProps = {
   category: CategoryWithServices

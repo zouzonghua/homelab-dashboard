@@ -2,10 +2,14 @@ import type { CSSProperties } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faEdit, faCheck } from "@fortawesome/free-solid-svg-icons";
 // import Avatar from '@/assets/icons/Avatar.jpg'
-import ThemeToggle from './ThemeToggle'
+import ThemeToggle from '@/shared/ui/ThemeToggle'
 import ConfigTools from './ConfigTools'
-import { getServiceStatus } from '../api'
-import type { CategoryWithServices, ServiceStatus, ServiceStatusMap } from '../types'
+import type { ServiceStatus } from '@/shared/api'
+import {
+  getServiceStatus,
+  type CategoryWithServices,
+  type ServiceStatusMap,
+} from '../model/dashboard'
 
 const  Avatar = 'https://avatars.githubusercontent.com/u/53508103?v=4'
 
