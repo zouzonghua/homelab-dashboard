@@ -62,8 +62,8 @@ export default function DashboardModals({
         >
           <div className="chassis-modal max-w-md w-full mx-4 p-6" onClick={(event) => event.stopPropagation()}>
             <CategoryForm
-              title="添加新分类"
-              submitLabel="添加分类"
+              title="Add new category"
+              submitLabel="Add category"
               onSubmit={(category) => onAddCategory({ ...category, list: [] })}
               onCancel={onCloseAddCategory}
             />
@@ -87,16 +87,16 @@ export default function DashboardModals({
           onClick={onCloseEditService}
         >
           <div className="chassis-modal max-w-md w-full mx-4 p-6" onClick={(event) => event.stopPropagation()}>
-            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">编辑服务</h3>
+            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Edit service</h3>
             <ServiceForm
               initialValue={editingService.service}
-              submitLabel="保存"
+              submitLabel="Save"
               onSubmit={(updatedService) =>
                 onEditService(editingService.categoryName, updatedService, editingService.serviceIndex)
               }
               onCancel={onCloseEditService}
               onDelete={() => {
-                if (window.confirm(`确定要删除服务 "${editingService.service.name}" 吗？`)) {
+                if (window.confirm(`Delete service "${editingService.service.name}"?`)) {
                   onDeleteService(editingService.categoryName, editingService.serviceIndex)
                   onCloseEditService()
                 }
@@ -112,9 +112,9 @@ export default function DashboardModals({
           onClick={onCloseAddService}
         >
           <div className="chassis-modal max-w-md w-full mx-4 p-6" onClick={(event) => event.stopPropagation()}>
-            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">添加服务</h3>
+            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Add service</h3>
             <ServiceForm
-              submitLabel="添加"
+              submitLabel="Add"
               onSubmit={(newService) => onAddService(addingService.categoryName, newService)}
               onCancel={onCloseAddService}
             />
@@ -129,13 +129,13 @@ export default function DashboardModals({
         >
           <div className="chassis-modal max-w-md w-full mx-4 p-6" onClick={(event) => event.stopPropagation()}>
             <CategoryForm
-              title="编辑分类"
+              title="Edit category"
               initialValue={editingCategory.category}
-              submitLabel="保存"
+              submitLabel="Save"
               onSubmit={(updatedCategory) => onEditCategory(editingCategory.categoryIndex, updatedCategory)}
               onCancel={onCloseEditCategory}
               onDelete={() => {
-                if (window.confirm(`确定要删除分类 "${editingCategory.category.name}" 吗？\n此操作将删除该分类下的所有服务！`)) {
+                if (window.confirm(`Delete category "${editingCategory.category.name}"?\nThis will delete all services in this category.`)) {
                   onDeleteCategory(editingCategory.category.name)
                   onCloseEditCategory()
                 }

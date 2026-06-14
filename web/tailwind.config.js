@@ -4,7 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: "class", // 改为 class 而不是 media
+  darkMode: "class", // Use class-based dark mode instead of media queries.
   theme: {
     extend: {
       colors: {

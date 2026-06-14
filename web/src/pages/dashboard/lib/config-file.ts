@@ -1,5 +1,5 @@
 /**
- * 配置服务 - 处理配置的服务端导入和导出
+ * Config file helpers for server-side import and export.
  */
 
 import { dashboardApi, type ImportConfigData } from '@/shared/api'
@@ -16,13 +16,13 @@ const readFileAsText = async (file: File) => {
   return await new Promise<string>((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result ?? ''))
-    reader.onerror = () => reject(new Error('读取文件失败'))
+    reader.onerror = () => reject(new Error('Failed to read file'))
     reader.readAsText(file)
   })
 }
 
 /**
- * 从服务端 SQLite 导出配置为 JSON 文件
+ * Export the server-side SQLite config as a JSON file.
  */
 export const exportConfig = async () => {
   const blob = await dashboardApi.exportConfig()
@@ -41,7 +41,7 @@ export const exportConfig = async () => {
 }
 
 /**
- * 导入配置文件到服务端 SQLite，并返回刷新后的 API 配置
+ * Import a config file into server-side SQLite and return the refreshed API config.
  */
 export const importConfig = async (file: File) => {
   let config: ImportConfigRequest
@@ -49,7 +49,7 @@ export const importConfig = async (file: File) => {
   try {
     config = JSON.parse(await readFileAsText(file)) as ImportConfigRequest
   } catch {
-    throw new Error('配置文件格式无效')
+    throw new Error('Invalid config file format')
   }
 
   await dashboardApi.importConfig(config)

@@ -44,7 +44,7 @@ export function useDashboard() {
   const configQuery = useQuery(dashboardQueries.config())
   const config = configQuery.data ?? null
   const loading = configQuery.isLoading
-  const error = configQuery.error ? '配置加载失败' : null
+  const error = configQuery.error ? 'Failed to load config' : null
 
   const statusQuery = useQuery({
     ...dashboardQueries.status(),
@@ -75,7 +75,7 @@ export function useDashboard() {
         queryClient.setQueryData(dashboardQueries.status().queryKey, status)
       },
       (error) => {
-        console.warn('服务状态实时流失败，使用 React Query 轮询:', error)
+        console.warn('Live status stream failed, falling back to React Query polling:', error)
         unsubscribe?.()
         unsubscribe = null
       },
@@ -109,8 +109,8 @@ export function useDashboard() {
       })
     },
     onError: (error) => {
-      console.error('API 保存配置失败:', error)
-      toast.error('保存到服务端失败', {
+      console.error('Failed to save API config:', error)
+      toast.error('Failed to save to server', {
         autoClose: 1000,
         hideProgressBar: true,
         position: 'top-right',
@@ -144,7 +144,7 @@ export function useDashboard() {
         newConfig.items[categoryIndex].list[serviceIndex] = nextService
 
         setTimeout(() => {
-          persistConfig(newConfig, '配置已自动保存', { action: 'updateService', service: nextService })
+          persistConfig(newConfig, 'Configuration saved', { action: 'updateService', service: nextService })
         }, 0)
       }
 
@@ -164,12 +164,12 @@ export function useDashboard() {
 
         const categoryId = newConfig.items[categoryIndex].id
         if (categoryId == null) {
-          toast.error('分类缺少服务端 ID，无法添加服务')
+          toast.error('Category is missing a server ID, cannot add service')
           return newConfig
         }
 
         setTimeout(() => {
-          persistConfig(newConfig, `服务 "${newService.name}" 已添加`, {
+          persistConfig(newConfig, `Service "${newService.name}" added`, {
             action: 'createService',
             categoryId,
             service: newService,
@@ -193,7 +193,7 @@ export function useDashboard() {
         newConfig.items[categoryIndex].list.splice(serviceIndex, 1)
 
         setTimeout(() => {
-          persistConfig(newConfig, `服务 "${deletedService.name}" 已删除`, {
+          persistConfig(newConfig, `Service "${deletedService.name}" deleted`, {
             action: 'deleteService',
             service: deletedService,
           })
@@ -211,7 +211,7 @@ export function useDashboard() {
       newConfig.items.push(newCategory)
 
       setTimeout(() => {
-        persistConfig(newConfig, `分类 "${newCategory.name}" 已添加`, {
+        persistConfig(newConfig, `Category "${newCategory.name}" added`, {
           action: 'createCategory',
           category: newCategory,
         })
@@ -233,7 +233,7 @@ export function useDashboard() {
         newConfig.items.splice(categoryIndex, 1)
 
         setTimeout(() => {
-          persistConfig(newConfig, `分类 "${categoryName}" 已删除`, {
+          persistConfig(newConfig, `Category "${categoryName}" deleted`, {
             action: 'deleteCategory',
             category: deletedCategory,
           })
@@ -259,7 +259,7 @@ export function useDashboard() {
       }
 
       setTimeout(() => {
-        persistConfig(newConfig, '分类已更新', {
+        persistConfig(newConfig, 'Category updated', {
           action: 'updateCategory',
           category: newConfig.items[categoryIndex],
         })
@@ -276,7 +276,7 @@ export function useDashboard() {
       const newConfig = { ...prevConfig, items: newCategories }
 
       setTimeout(() => {
-        persistConfig(newConfig, '分类顺序已更新', {
+        persistConfig(newConfig, 'Category order updated', {
           action: 'reorderCategories',
           categories: newCategories,
         })
@@ -296,7 +296,7 @@ export function useDashboard() {
         newConfig.items[categoryIndex].list = newServices
 
         setTimeout(() => {
-          persistConfig(newConfig, '服务顺序已更新', {
+          persistConfig(newConfig, 'Service order updated', {
             action: 'reorderServices',
             services: newServices,
           })
@@ -320,10 +320,10 @@ export function useDashboard() {
   const handleExportConfig = async () => {
     try {
       await exportConfigToFile()
-      toast.success('配置已导出')
+      toast.success('Config exported')
     } catch (error) {
-      console.error('导出配置失败:', error)
-      toast.error('导出配置失败')
+      console.error('Failed to export config:', error)
+      toast.error('Failed to export config')
     }
   }
 
@@ -337,11 +337,11 @@ export function useDashboard() {
           queryClient.invalidateQueries({ queryKey: dashboardQueries.auditLogs().queryKey }),
         ])
         document.title = importedConfig.title || 'HomeLab Dashboard'
-        toast.success('配置已导入')
+        toast.success('Config imported')
       }
     } catch (error) {
-      const message = error instanceof Error ? error.message : '未知错误'
-      toast.error(`导入失败: ${message}`)
+      const message = error instanceof Error ? error.message : 'Unknown error'
+      toast.error(`Import failed: ${message}`)
     }
   }
 
@@ -352,7 +352,7 @@ export function useDashboard() {
     serviceStatus,
     auditLogs: auditLogsQuery.data ?? [],
     auditLogsLoading: auditLogsQuery.isLoading,
-    auditLogsError: auditLogsQuery.error ? '操作记录加载失败' : null,
+    auditLogsError: auditLogsQuery.error ? 'Failed to load activity logs' : null,
     refetchAuditLogs: auditLogsQuery.refetch,
     isAddingCategory,
     isEditMode,

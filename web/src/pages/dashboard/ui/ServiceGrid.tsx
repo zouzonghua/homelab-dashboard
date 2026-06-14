@@ -52,7 +52,7 @@ type ServiceGridProps = {
   serviceStatus?: ServiceStatusMap
 }
 
-// 可排序的分类项组件
+// Sortable category item.
 const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }: SortableCategoryItemProps) => {
   const {
     attributes,
@@ -101,7 +101,7 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // 拖拽激活距离，避免误触
+        distance: 8, // Activation distance to avoid accidental drags.
       },
     }),
     useSensor(KeyboardSensor, {
@@ -109,7 +109,7 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
     })
   )
 
-  // 计算每个卡片的宽度类名
+  // Calculate the width class for each card.
   const getColumnClass = () => {
     switch (parseInt(String(columns))) {
       case 1: return 'w-full'

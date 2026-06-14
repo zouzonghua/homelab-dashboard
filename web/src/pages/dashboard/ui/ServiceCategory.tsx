@@ -55,7 +55,7 @@ type ServiceCategoryProps = {
 const getServiceSortableId = (service: ServiceViewModel, index: number) =>
   service.id != null ? String(service.id) : `${service.name}${index}`
 
-// 可排序的服务项组件
+// Sortable service item.
 const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode, status }: SortableServiceItemProps) => {
   const {
     attributes,
@@ -103,7 +103,7 @@ const ServiceCategory = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8, // 拖拽激活距离，避免误触
+        distance: 8, // Activation distance to avoid accidental drags.
       },
     }),
     useSensor(KeyboardSensor, {
@@ -112,13 +112,13 @@ const ServiceCategory = ({
   )
 
   const handleDeleteService = (index: number) => {
-    if (onDeleteService && window.confirm(`确定要删除服务 "${category.list[index].name}" 吗？`)) {
+    if (onDeleteService && window.confirm(`Delete service "${category.list[index].name}"?`)) {
       onDeleteService(index);
     }
   };
 
   const handleDeleteCategory = () => {
-    if (onDeleteCategory && window.confirm(`确定要删除分类 "${category.name}" 吗？\n此操作将删除该分类下的所有服务！`)) {
+    if (onDeleteCategory && window.confirm(`Delete category "${category.name}"?\nThis will delete all services in this category.`)) {
       onDeleteCategory();
     }
   };
@@ -139,7 +139,7 @@ const ServiceCategory = ({
     <div className={`rack-section flex flex-col w-full p-2`}>
       <h2 className="rack-section__header group-title truncate text-2xl mt-2 mb-4 flex items-center justify-between">
         <span className="rack-section__label flex items-center">
-          {/* 分类图标 - 编辑模式下可拖拽 */}
+          {/* Category icon doubles as the drag handle in edit mode. */}
           <span
             {...(isEditMode ? dragHandleProps : {})}
             className={`rack-section__icon fa-lg pr-1 ${
@@ -147,19 +147,19 @@ const ServiceCategory = ({
                 ? 'cursor-grab active:cursor-grabbing p-2 -ml-2 rounded-md transition-colors'
                 : ''
             }`}
-            title={isEditMode ? '拖拽排序' : ''}
+            title={isEditMode ? 'Drag to reorder' : ''}
           >
             <FontAwesomeIcon icon={getCategoryIcon(category.icon)} />
           </span>
           {category.name}
         </span>
-        {/* 编辑分类按钮 - 仅在编辑模式下显示 */}
+        {/* Category edit button, only visible in edit mode. */}
         {isEditMode && onEditCategory && (
           <button
             onClick={onEditCategory}
             className="chassis-icon-button p-2 transition-colors text-lg"
-            aria-label={`编辑分类 ${category.name}`}
-            title="编辑分类"
+            aria-label={`Edit category ${category.name}`}
+            title="Edit category"
           >
             <FontAwesomeIcon icon={faEdit} />
           </button>
@@ -186,16 +186,16 @@ const ServiceCategory = ({
                 status={getServiceStatus(serviceStatus, service) as ServiceStatus | undefined}
               />
             ))}
-            {/* 添加服务按钮 - 仅在编辑模式下显示 */}
+            {/* Add service button, only visible in edit mode. */}
             {isEditMode && (
               <li>
                 <button
                   onClick={onOpenAddService}
                   className="drive-bay drive-bay--add w-full flex items-center justify-center p-4 transition duration-300 ease-in-out mb-6 cursor-pointer"
-                  aria-label={`添加服务到 ${category.name}`}
+                  aria-label={`Add service to ${category.name}`}
                 >
                   <FontAwesomeIcon icon={faPlus} className="mr-2 text-xl" />
-                  <span className="font-semibold">添加服务</span>
+                  <span className="font-semibold">Add service</span>
                 </button>
               </li>
             )}
