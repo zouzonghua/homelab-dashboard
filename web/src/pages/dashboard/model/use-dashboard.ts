@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
-import { dashboardApi, subscribeStatus } from '@/shared/api'
+import { subscribeStatus } from '@/shared/api'
+import { dashboardQueries } from '../api/dashboard-queries'
 import {
   exportConfig as exportConfigToFile,
   importConfig as importConfigFromFile,
@@ -14,7 +15,7 @@ import type {
   ServiceStatusMap,
   ServiceViewModel,
 } from './dashboard'
-import { fetchDashboardConfig, saveDashboardConfig } from './dashboard'
+import { saveDashboardConfig } from './dashboard'
 
 export type EditingService = {
   service: ServiceViewModel
@@ -31,12 +32,6 @@ export type EditingCategory = {
   categoryIndex: number
 }
 
-const queryKeys = {
-  config: ['dashboardConfig'] as const,
-  status: ['serviceStatus'] as const,
-  auditLogs: ['auditLogs'] as const,
-}
-
 export function useDashboard() {
   const queryClient = useQueryClient()
   const [isAddingCategory, setIsAddingCategory] = useState(false)
@@ -46,25 +41,19 @@ export function useDashboard() {
   const [editingCategory, setEditingCategory] = useState<EditingCategory | null>(null)
   const [auditLogsOpen, setAuditLogsOpen] = useState(false)
 
-  const configQuery = useQuery({
-    queryKey: queryKeys.config,
-    queryFn: fetchDashboardConfig,
-  })
+  const configQuery = useQuery(dashboardQueries.config())
   const config = configQuery.data ?? null
   const loading = configQuery.isLoading
   const error = configQuery.error ? '配置加载失败' : null
 
   const statusQuery = useQuery({
-    queryKey: queryKeys.status,
-    queryFn: dashboardApi.getStatus,
+    ...dashboardQueries.status(),
     enabled: Boolean(config),
-    refetchInterval: 30000,
   })
   const serviceStatus = (statusQuery.data ?? {}) as ServiceStatusMap
 
   const auditLogsQuery = useQuery({
-    queryKey: queryKeys.auditLogs,
-    queryFn: dashboardApi.listAuditLogs,
+    ...dashboardQueries.auditLogs(),
     enabled: auditLogsOpen,
   })
 
@@ -83,7 +72,7 @@ export function useDashboard() {
         if (import.meta.env.VITE_DEBUG_STATUS === '1') {
           console.debug('[status] stream event', status)
         }
-        queryClient.setQueryData(queryKeys.status, status)
+        queryClient.setQueryData(dashboardQueries.status().queryKey, status)
       },
       (error) => {
         console.warn('服务状态实时流失败，使用 React Query 轮询:', error)
@@ -98,7 +87,7 @@ export function useDashboard() {
   }, [config, queryClient])
 
   const setConfig = (updater: (prevConfig: DashboardViewModel | null) => DashboardViewModel | null) => {
-    queryClient.setQueryData<DashboardViewModel>(queryKeys.config, (current) => {
+    queryClient.setQueryData<DashboardViewModel>(dashboardQueries.config().queryKey, (current) => {
       const next = updater(current ?? null)
       return next ?? current
     })
@@ -108,10 +97,10 @@ export function useDashboard() {
     mutationFn: ({ nextConfig, options }: { nextConfig: DashboardViewModel; options: SaveConfigOptions; successMessage: string }) =>
       saveDashboardConfig(nextConfig, options),
     onSuccess: async (_result, variables) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.config })
+      await queryClient.invalidateQueries({ queryKey: dashboardQueries.config().queryKey })
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.status }),
-        queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs }),
+        queryClient.invalidateQueries({ queryKey: dashboardQueries.status().queryKey }),
+        queryClient.invalidateQueries({ queryKey: dashboardQueries.auditLogs().queryKey }),
       ])
       toast.success(variables.successMessage, {
         autoClose: 1000,
@@ -342,10 +331,10 @@ export function useDashboard() {
     try {
       const importedConfig = await importConfigFromFile(file)
       if (importedConfig) {
-        queryClient.setQueryData(queryKeys.config, importedConfig)
+        queryClient.setQueryData(dashboardQueries.config().queryKey, importedConfig)
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: queryKeys.status }),
-          queryClient.invalidateQueries({ queryKey: queryKeys.auditLogs }),
+          queryClient.invalidateQueries({ queryKey: dashboardQueries.status().queryKey }),
+          queryClient.invalidateQueries({ queryKey: dashboardQueries.auditLogs().queryKey }),
         ])
         document.title = importedConfig.title || 'HomeLab Dashboard'
         toast.success('配置已导入')

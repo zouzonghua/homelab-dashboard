@@ -17,8 +17,6 @@ export type ServiceFormData = Pick<
 type PendingService = ServiceFormData & Partial<Pick<Service, 'id' | 'categoryId' | 'order'>>
 
 export type ServiceViewModel = (Service | PendingService) & {
-  logoUrl?: string
-  serviceUrl?: string
   sortOrder?: number
 }
 
