@@ -17,6 +17,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 	"unicode/utf8"
@@ -492,6 +493,11 @@ func getV1StatusStream(w http.ResponseWriter, r *http.Request, st *store.Store) 
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("X-Accel-Buffering", "no")
+	if err := writeStatusStreamReady(w); err != nil {
+		log.Printf("[status] v1 stream ready write failed: %v", err)
+		return
+	}
+	flusher.Flush()
 
 	writeSnapshot := func() bool {
 		results, err := loadV1StatusResults(r.Context(), st)
@@ -525,6 +531,11 @@ func getV1StatusStream(w http.ResponseWriter, r *http.Request, st *store.Store) 
 	}
 }
 
+func writeStatusStreamReady(w io.Writer) error {
+	_, err := io.WriteString(w, ": connected\n\n")
+	return err
+}
+
 func loadV1StatusResults(ctx context.Context, st *store.Store) (map[string]monitor.Result, error) {
 	services, err := st.ListServices(ctx)
 	if err != nil {
@@ -533,17 +544,31 @@ func loadV1StatusResults(ctx context.Context, st *store.Store) (map[string]monit
 
 	checker := monitor.NewChecker(3 * time.Second)
 	results := map[string]monitor.Result{}
+	var mutex sync.Mutex
+	var checks sync.WaitGroup
+
 	for _, service := range services {
 		if !service.MonitorEnabled {
 			continue
 		}
-		monitorURL := service.MonitorURL
-		if monitorURL == "" {
-			monitorURL = service.URL
-		}
-		result := checker.Check(ctx, service.Name, monitorURL)
-		results[strconv.FormatInt(service.ID, 10)] = result
+		service := service
+		checks.Add(1)
+		go func() {
+			defer checks.Done()
+
+			monitorURL := service.MonitorURL
+			if monitorURL == "" {
+				monitorURL = service.URL
+			}
+			result := checker.Check(ctx, service.Name, monitorURL)
+
+			mutex.Lock()
+			results[strconv.FormatInt(service.ID, 10)] = result
+			mutex.Unlock()
+		}()
 	}
+	checks.Wait()
+
 	return results, nil
 }
 

@@ -33,7 +33,7 @@ const getStableHash = (value?: string) =>
     return nextHash >>> 0
   }, 0)
 
-const getCategoryLed = (category: CategoryWithServices, serviceStatus: ServiceStatusMap) => {
+export const getCategoryLed = (category: CategoryWithServices, serviceStatus: ServiceStatusMap) => {
   const monitored = category.list.filter((service) => service.monitorEnabled)
   if (monitored.length === 0) {
     return {
@@ -54,11 +54,14 @@ const getCategoryLed = (category: CategoryWithServices, serviceStatus: ServiceSt
     return nextCounts
   }, { up: 0, down: 0, pending: 0 })
 
-  const className = counts.down > 0
-    ? 'status-port-down'
-    : counts.pending > 0
-      ? 'status-port-warning'
-      : 'status-online'
+  let className = 'status-port-pending'
+  if (counts.down === monitored.length) {
+    className = 'status-port-down'
+  } else if (counts.down > 0) {
+    className = 'status-port-warning'
+  } else if (counts.up === monitored.length) {
+    className = 'status-online'
+  }
 
   return {
     className,
