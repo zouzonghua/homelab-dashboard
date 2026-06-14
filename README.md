@@ -1,5 +1,9 @@
 # Homelab Dashboard
 
+[![Docker Pulls](https://img.shields.io/docker/pulls/zouzonghua/homelab-dashboard)](https://hub.docker.com/r/zouzonghua/homelab-dashboard)
+[![GitHub release](https://img.shields.io/github/v/release/zouzonghua/homelab-dashboard)](https://github.com/zouzonghua/homelab-dashboard/releases)
+[![License](https://img.shields.io/github/license/zouzonghua/homelab-dashboard)](LICENSE)
+
 一个现代化的家庭服务器仪表盘，帮助你更好地管理和监控你的家庭服务器。
 
 ## 在线预览
