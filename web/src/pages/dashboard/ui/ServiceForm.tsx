@@ -1,87 +1,98 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react'
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faSave, faTimes, faTrash } from "@fortawesome/free-solid-svg-icons";
-import type { BivariantCallback, ServiceFormData, ServiceViewModel } from '../types'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPlus, faSave, faTimes, faTrash } from '@fortawesome/free-solid-svg-icons'
+import type { BivariantCallback, ServiceFormData } from '../model/dashboard'
 
-type ServiceEditFormProps = {
-  service: ServiceViewModel
-  onSave: BivariantCallback<[ServiceFormData]>
+const emptyServiceForm: ServiceFormData = {
+  name: '',
+  logo: '',
+  url: '',
+  target: '_blank',
+  monitorEnabled: false,
+  monitorUrl: '',
+}
+
+type ServiceFormProps = {
+  initialValue?: ServiceFormData
+  submitLabel: string
+  onSubmit: BivariantCallback<[ServiceFormData]>
   onCancel: () => void
   onDelete?: () => void
 }
 
-const ServiceEditForm = ({ service, onSave, onCancel, onDelete }: ServiceEditFormProps) => {
-  const [formData, setFormData] = useState<ServiceFormData>({
-    name: service.name,
-    logo: service.logo || '',
-    url: service.url,
-    target: service.target || '_blank',
-    monitorEnabled: service.monitorEnabled || false,
-    monitorUrl: service.monitorUrl || ''
-  });
+export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCancel, onDelete }: ServiceFormProps) {
+  const [formData, setFormData] = useState<ServiceFormData>(initialValue ?? emptyServiceForm)
 
-  const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, type, value } = e.currentTarget;
-    const checked = e.currentTarget instanceof HTMLInputElement ? e.currentTarget.checked : false;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
+  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, type, value } = event.currentTarget
+    const checked = event.currentTarget instanceof HTMLInputElement ? event.currentTarget.checked : false
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    onSave({
+    setFormData((current) => ({
+      ...current,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    onSubmit({
       ...formData,
-      monitorUrl: formData.monitorEnabled ? formData.monitorUrl : ''
-    });
-  };
+      monitorUrl: formData.monitorEnabled ? formData.monitorUrl : '',
+    })
+  }
 
   return (
     <form onSubmit={handleSubmit}>
       <div className="mb-3">
-        <label htmlFor="name" className="block text-sm font-medium mb-1">名称</label>
+        <label htmlFor="service-name" className="block text-sm font-medium mb-1">名称</label>
         <input
           type="text"
-          id="name"
+          id="service-name"
           name="name"
           value={formData.name}
           onChange={handleChange}
           className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
+          placeholder="例如：Jellyfin"
           required
         />
       </div>
-      
+
       <div className="mb-3">
-        <label htmlFor="logo" className="block text-sm font-medium mb-1">Logo 路径</label>
+        <label htmlFor="service-logo" className="block text-sm font-medium mb-1">Logo 路径</label>
         <input
           type="text"
-          id="logo"
+          id="service-logo"
           name="logo"
           value={formData.logo}
           onChange={handleChange}
           className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
           placeholder="留空则自动获取 favicon"
         />
+        {!initialValue && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            本地图标、远程 URL，或留空自动获取 favicon
+          </p>
+        )}
       </div>
-      
+
       <div className="mb-3">
-        <label htmlFor="url" className="block text-sm font-medium mb-1">URL</label>
+        <label htmlFor="service-url" className="block text-sm font-medium mb-1">URL</label>
         <input
           type="url"
-          id="url"
+          id="service-url"
           name="url"
           value={formData.url}
           onChange={handleChange}
           className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
+          placeholder="http://192.168.1.100:8096"
           required
         />
       </div>
-      
+
       <div className="mb-4">
-        <label htmlFor="target" className="block text-sm font-medium mb-1">打开方式</label>
+        <label htmlFor="service-target" className="block text-sm font-medium mb-1">打开方式</label>
         <select
-          id="target"
+          id="service-target"
           name="target"
           value={formData.target}
           onChange={handleChange}
@@ -107,10 +118,10 @@ const ServiceEditForm = ({ service, onSave, onCancel, onDelete }: ServiceEditFor
 
       {formData.monitorEnabled && (
         <div className="mb-4">
-          <label htmlFor="monitorUrl" className="block text-sm font-medium mb-1">检测 URL</label>
+          <label htmlFor="service-monitor-url" className="block text-sm font-medium mb-1">检测 URL</label>
           <input
             type="url"
-            id="monitorUrl"
+            id="service-monitor-url"
             name="monitorUrl"
             value={formData.monitorUrl}
             onChange={handleChange}
@@ -119,9 +130,8 @@ const ServiceEditForm = ({ service, onSave, onCancel, onDelete }: ServiceEditFor
           />
         </div>
       )}
-      
+
       <div className="flex justify-between items-center">
-        {/* 删除按钮 - 左侧 */}
         {onDelete && (
           <button
             type="button"
@@ -133,32 +143,21 @@ const ServiceEditForm = ({ service, onSave, onCancel, onDelete }: ServiceEditFor
           </button>
         )}
 
-        {/* 取消和保存按钮 - 右侧 */}
         <div className="flex space-x-2 ml-auto">
           <button
             type="button"
             onClick={onCancel}
-            className="
-            px-4 py-2
-            bg-gray-100 hover:bg-gray-300
-            dark:bg-gray-400 dark:hover:bg-gray-500
-            rounded-md
-            transition-colors"
+            className="px-4 py-2 bg-gray-200 dark:bg-dark-600 rounded-md hover:bg-gray-300 dark:hover:bg-dark-500 transition-colors"
           >
             <FontAwesomeIcon icon={faTimes} className="mr-1" />
             取消
           </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-          >
-            <FontAwesomeIcon icon={faSave} className="mr-1" />
-            保存
+          <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
+            <FontAwesomeIcon icon={onDelete ? faSave : faPlus} className="mr-1" />
+            {submitLabel}
           </button>
         </div>
       </div>
     </form>
-  );
-};
-
-export default ServiceEditForm;
+  )
+}

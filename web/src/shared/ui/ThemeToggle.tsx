@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faDesktop, faMoon, faSun } from '@fortawesome/free-solid-svg-icons'
-import { useTheme, type Theme } from '../contexts/ThemeContext'
+import { useTheme, type Theme } from './theme'
 
 const themeCycle: Theme[] = ['system', 'light', 'dark']
 

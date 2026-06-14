@@ -1,6 +1,6 @@
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faRotateRight, faXmark } from '@fortawesome/free-solid-svg-icons'
-import type { AuditLog } from '../api/contract'
+import type { AuditLog } from '@/shared/api'
 
 type AuditLogPanelProps = {
   logs: AuditLog[]
