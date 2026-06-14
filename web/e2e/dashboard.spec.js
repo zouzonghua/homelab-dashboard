@@ -1,12 +1,20 @@
 import { expect, test } from '@playwright/test'
 
 test('loads dashboard and persists a new service after reload', async ({ page }) => {
+  const statusRequests = []
+  page.on('request', (request) => {
+    if (new URL(request.url()).pathname === '/api/v1/status') {
+      statusRequests.push(request)
+    }
+  })
+
   await page.goto('/')
 
   await expect(page.getByRole('heading', { name: /homelab dashboard/i })).toBeVisible()
   await expect(page.getByText('Jellyfin')).toBeVisible()
   await expect(page.getByText('HOMELAB', { exact: true })).toHaveCount(0)
   await expect(page.locator('.chassis-header__leds .status-port')).toHaveCount(4)
+  expect(statusRequests).toHaveLength(0)
 
   await page.getByRole('button', { name: 'Enter edit mode' }).click()
   await page.getByRole('button', { name: 'Add service to Media' }).click()
@@ -31,4 +39,5 @@ test('loads dashboard and persists a new service after reload', async ({ page })
   await expect(page.getByRole('button', { name: 'Visit E2E Service' })).toBeVisible()
   await expect(page.getByLabel('E2E Service service status up')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Visit E2E Service' }).getByText(/\d+ms/)).toBeVisible()
+  expect(statusRequests).toHaveLength(0)
 })

@@ -45,10 +45,11 @@ export function useDashboard() {
   const config = configQuery.data ?? null
   const loading = configQuery.isLoading
   const error = configQuery.error ? 'Failed to load config' : null
+  const [statusPollingEnabled, setStatusPollingEnabled] = useState(false)
 
   const statusQuery = useQuery({
     ...dashboardQueries.status(),
-    enabled: Boolean(config),
+    enabled: Boolean(config) && statusPollingEnabled,
   })
   const serviceStatus = (statusQuery.data ?? {}) as ServiceStatusMap
 
@@ -69,6 +70,7 @@ export function useDashboard() {
 
     unsubscribe = subscribeStatus(
       (status) => {
+        setStatusPollingEnabled(false)
         if (import.meta.env.VITE_DEBUG_STATUS === '1') {
           console.debug('[status] stream event', status)
         }
@@ -78,8 +80,13 @@ export function useDashboard() {
         console.warn('Live status stream failed, falling back to React Query polling:', error)
         unsubscribe?.()
         unsubscribe = null
+        setStatusPollingEnabled(true)
       },
     )
+
+    if (!unsubscribe) {
+      setStatusPollingEnabled(true)
+    }
 
     return () => {
       unsubscribe?.()
