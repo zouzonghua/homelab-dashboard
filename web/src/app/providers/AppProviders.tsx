@@ -1,15 +1,6 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { ThemeProvider } from '@/shared/ui/theme'
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 10_000,
-      refetchOnWindowFocus: false,
-    },
-  },
-})
+import { QueryProvider } from './QueryProvider'
 
 type AppProvidersProps = {
   children: ReactNode
@@ -17,8 +8,8 @@ type AppProvidersProps = {
 
 export function AppProviders({ children }: AppProvidersProps) {
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryProvider>
       <ThemeProvider>{children}</ThemeProvider>
-    </QueryClientProvider>
+    </QueryProvider>
   )
 }
