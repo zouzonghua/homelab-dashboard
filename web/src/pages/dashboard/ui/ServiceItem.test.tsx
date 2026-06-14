@@ -1,7 +1,7 @@
 import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import ServiceItem from './ServiceItem'
-import type { ServiceViewModel } from '../types'
+import type { ServiceViewModel } from '../model/dashboard'
 
 const service = (logo: string): ServiceViewModel => ({
   id: 12,
