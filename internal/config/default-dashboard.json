@@ -1,112 +1,238 @@
 {
-  "date": "2022-09-07",
-  "title": "zonghua's homelab dashboard",
+  "date": "2026-10-26",
+  "title": "Homelab",
   "columns": "4",
   "items": [
+    {
+      "name": "Smart Home & IoT",
+      "icon": "fa-solid fa-home",
+      "list": [
+        {
+          "name": "ESPHome",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/esphome.png",
+          "url": "https://esphome.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "Home Assistant",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/home-assistant.png",
+          "url": "https://homeassistant.bh.zouzonghua.cn",
+          "target": "_blank"
+        }
+      ]
+    },
+    {
+      "name": "Reading & News",
+      "icon": "fa-solid fa-book",
+      "list": [
+        {
+          "name": "Calibre-Web",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/calibre-web.png",
+          "url": "https://calibre-web.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "Miniflux",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/miniflux.png",
+          "url": "https://miniflux.bh.zouzonghua.cn",
+          "target": "_blank"
+        }
+      ]
+    },
     {
       "name": "Media",
       "icon": "fa-solid fa-photo-film",
       "list": [
         {
+          "name": "Immich",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/immich.png",
+          "url": "https://immich.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
           "name": "Jellyfin",
-          "logo": "",
-          "url": "http://192.168.1.203:8096",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyfin.png",
+          "url": "https://jellyfin.bh.zouzonghua.cn",
           "target": "_blank"
         },
         {
           "name": "Navidrome",
-          "logo": "https://raw.githubusercontent.com/navidrome/navidrome/master/resources/logo-192x192.png",
-          "url": "http://192.168.1.203:4533",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/navidrome.png",
+          "url": "https://navidrome.bh.zouzonghua.cn",
           "target": "_blank"
         },
         {
-          "name": "PhotoPrism",
-          "logo": "https://www.photoprism.app/static/icons/logo.svg",
-          "url": "http://192.168.1.203:2342",
+          "name": "Seerr",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyseerr.png",
+          "url": "https://seerr.bh.zouzonghua.cn",
           "target": "_blank"
         }
       ]
     },
     {
-      "name": "Services",
-      "icon": "fa-solid fa-stream",
-      "list": [
-        {
-          "name": "Bitwarden",
-          "logo": "",
-          "url": "https://bitr.zouzonghua.cn/",
-          "target": "_blank"
-        },
-        {
-          "name": "Transmission",
-          "logo": "",
-          "url": "http://192.168.1.203:9091",
-          "target": "_blank"
-        },
-        {
-          "name": "Jackett",
-          "logo": "",
-          "url": "http://192.168.1.203:9117/",
-          "target": "_blank"
-        },
-        {
-          "name": "Gitea",
-          "logo": "",
-          "url": "https://git.zouzonghua.cn",
-          "target": "_blank"
-        },
-        {
-          "name": "Miniflux",
-          "logo": "https://avatars.githubusercontent.com/u/10584991?s=200&v=4",
-          "url": "https://rss.zouzonghua.cn",
-          "target": "_blank"
-        }
-      ]
-    },
-    {
-      "name": "System",
+      "name": "Media Automation",
       "icon": "fa-solid fa-cog",
       "list": [
         {
-          "name": "Padavan",
-          "logo": "",
-          "url": "http://192.168.1.1",
+          "name": "Bazarr",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/bazarr.png",
+          "url": "https://bazarr.bh.zouzonghua.cn",
           "target": "_blank"
         },
         {
-          "name": "OpenWrt",
-          "logo": "",
-          "url": "http://192.168.1.254",
+          "name": "Music-Tag",
+          "logo": "https://cdn.jsdelivr.net/gh/homarr-labs/dashboard-icons/png/musicbrainz-picard.png",
+          "url": "https://music-tag.bh.zouzonghua.cn",
           "target": "_blank"
         },
         {
-          "name": "Proxmox VE",
-          "logo": "https://pve.proxmox.com/mediawiki/resources/assets/proxmox_logo.png?ffc80",
-          "url": "https://192.168.1.2:8006",
+          "name": "Prowlarr",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/prowlarr.png",
+          "url": "https://prowlarr.bh.zouzonghua.cn",
           "target": "_blank"
         },
         {
-          "name": "Portainer",
-          "logo": "",
-          "url": "http://192.168.1.203:9000",
+          "name": "Radarr",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/radarr.png",
+          "url": "https://radarr.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "Sonarr",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/sonarr.png",
+          "url": "https://sonarr.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "qBittorrent",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/qbittorrent.png",
+          "url": "https://qbittorrent.bh.zouzonghua.cn",
           "target": "_blank"
         }
       ]
     },
     {
-      "name": "Home Automation",
-      "icon": "fa-solid fa-home",
+      "name": "Cluster & Monitoring",
+      "icon": "fa-solid fa-server",
       "list": [
         {
-          "name": "Home Assistant",
-          "logo": "",
-          "url": "http://192.168.1.203:8123",
+          "name": "Backrest",
+          "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/backrest.png",
+          "url": "https://backrest.bh.zouzonghua.cn",
           "target": "_blank"
         },
         {
-          "name": "ESPHome",
-          "logo": "",
-          "url": "http://192.168.1.203:6052",
+          "name": "Grafana",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/grafana.png",
+          "url": "https://grafana.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "Headlamp",
+          "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/headlamp.png",
+          "url": "https://headlamp.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "Healthchecks",
+          "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/healthchecks.png",
+          "url": "https://healthchecks.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "Longhorn",
+          "logo": "https://longhorn.io/img/logos/longhorn-icon-color.png",
+          "url": "https://longhorn.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "Uptime Kuma",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/uptime-kuma.png",
+          "url": "https://uptime.bh.zouzonghua.cn",
+          "target": "_blank"
+        }
+      ]
+    },
+    {
+      "name": "Network & Devices",
+      "icon": "fa-solid fa-network-wired",
+      "list": [
+        {
+          "name": "Cockpit (p330-tiny)",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/cockpit.png",
+          "url": "https://p330-tiny.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "GPON stick",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/openwrt.png",
+          "url": "https://ma5671a.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "One-KVM",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/pikvm.png",
+          "url": "https://one-kvm.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "Synology NVR",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/synology-dsm.png",
+          "url": "https://nvr.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "TrueNAS",
+          "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/truenas-core.png",
+          "url": "https://truenas.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "sing-box",
+          "logo": "https://sing-box.sagernet.org/assets/icon.svg",
+          "url": "https://sing-box.bh.zouzonghua.cn",
+          "target": "_blank"
+        }
+      ]
+    },
+    {
+      "name": "Personal & Tools",
+      "icon": "fa-solid fa-code",
+      "list": [
+        {
+          "name": "Gitea",
+          "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/gitea.png",
+          "url": "https://gitea.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "OpenSpeedTest",
+          "logo": "https://avatars.githubusercontent.com/u/51720450?v=4",
+          "url": "https://speed.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "QD Today",
+          "logo": "https://cdn.jsdelivr.net/gh/qd-today/qd@master/web/static/img/icon.svg",
+          "url": "https://qd.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "Vaultwarden",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/vaultwarden.png",
+          "url": "https://vault.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "draw.io",
+          "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/draw-io.png",
+          "url": "https://drawio.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "ntfy",
+          "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/ntfy.png",
+          "url": "https://ntfy.zouzonghua.cn",
           "target": "_blank"
         }
       ]

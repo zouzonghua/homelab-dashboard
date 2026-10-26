@@ -2,12 +2,20 @@ import { createContext, useState, useEffect, useContext, type ReactNode } from '
 
 export type Theme = 'dark' | 'light' | 'system'
 
+export const getNextTheme = (theme: Theme): Theme =>
+  theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system'
+
 type ThemeContextValue = {
   theme: Theme
   setTheme: (theme: Theme) => void
 }
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
+
+const syncThemeColor = () => {
+  const color = getComputedStyle(document.documentElement).getPropertyValue('--wm-bg').trim()
+  if (color) document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color)
+}
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   // Theme state: 'dark', 'light', 'system'.
@@ -38,6 +46,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       // Apply the selected theme directly.
       html.classList.add(theme);
     }
+
+    syncThemeColor()
 
     // Save the theme to local storage.
     localStorage.setItem('theme', theme);

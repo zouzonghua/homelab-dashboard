@@ -1,17 +1,12 @@
-import { useState, type ChangeEvent, type FormEvent } from 'react'
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faSave, faTimes, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { useState, type FormEvent } from 'react'
+import { Button } from '@base-ui/react/button'
+import { Form } from '@base-ui/react/form'
+import { Input } from '@base-ui/react/input'
+import { Checkbox } from '@base-ui/react/checkbox'
+import SelectControl from '@/shared/ui/SelectControl'
 import type { BivariantCallback, ServiceFormData } from '../model/dashboard'
 
-const emptyServiceForm: ServiceFormData = {
-  name: '',
-  logo: '',
-  url: '',
-  target: '_blank',
-  monitorEnabled: false,
-  monitorUrl: '',
-}
-
+const emptyServiceForm: ServiceFormData = { name: '', logo: '', url: '', target: '_blank', monitorEnabled: false, monitorUrl: '' }
 type ServiceFormProps = {
   initialValue?: ServiceFormData
   submitLabel: string
@@ -19,145 +14,37 @@ type ServiceFormProps = {
   onCancel: () => void
   onDelete?: () => void
 }
-
 export default function ServiceForm({ initialValue, submitLabel, onSubmit, onCancel, onDelete }: ServiceFormProps) {
   const [formData, setFormData] = useState<ServiceFormData>(initialValue ?? emptyServiceForm)
-
-  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, type, value } = event.currentTarget
-    const checked = event.currentTarget instanceof HTMLInputElement ? event.currentTarget.checked : false
-
-    setFormData((current) => ({
-      ...current,
-      [name]: type === 'checkbox' ? checked : value,
-    }))
-  }
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const update = (key: keyof ServiceFormData, value: string | boolean) => setFormData((current) => ({ ...current, [key]: value }))
+  const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    onSubmit({
-      ...formData,
-      monitorUrl: formData.monitorEnabled ? formData.monitorUrl : '',
-    })
+    if (!event.currentTarget.checkValidity()) { event.currentTarget.reportValidity(); return }
+    onSubmit({ ...formData, monitorUrl: formData.monitorEnabled ? formData.monitorUrl : '' })
   }
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-3">
-        <label htmlFor="service-name" className="block text-sm font-medium mb-1">Name</label>
-        <input
-          type="text"
-          id="service-name"
-          name="name"
-          value={formData.name}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
-          placeholder="Example: Jellyfin"
-          required
-        />
-      </div>
-
-      <div className="mb-3">
-        <label htmlFor="service-logo" className="block text-sm font-medium mb-1">Logo path</label>
-        <input
-          type="text"
-          id="service-logo"
-          name="logo"
-          value={formData.logo}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
-          placeholder="Leave blank to fetch the favicon automatically"
-        />
-        {!initialValue && (
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Use a local icon, remote URL, or leave blank to fetch the favicon automatically
-          </p>
-        )}
-      </div>
-
-      <div className="mb-3">
-        <label htmlFor="service-url" className="block text-sm font-medium mb-1">URL</label>
-        <input
-          type="url"
-          id="service-url"
-          name="url"
-          value={formData.url}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
-          placeholder="http://192.168.1.100:8096"
-          required
-        />
-      </div>
-
-      <div className="mb-4">
-        <label htmlFor="service-target" className="block text-sm font-medium mb-1">Open behavior</label>
-        <select
-          id="service-target"
-          name="target"
-          value={formData.target}
-          onChange={handleChange}
-          className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
-        >
-          <option value="_blank">New tab (_blank)</option>
-          <option value="_self">Same tab (_self)</option>
-        </select>
-      </div>
-
-      <div className="mb-3">
-        <label className="flex items-center space-x-2 text-sm font-medium">
-          <input
-            type="checkbox"
-            name="monitorEnabled"
-            checked={formData.monitorEnabled}
-            onChange={handleChange}
-            className="rounded border-gray-300"
-          />
-          <span>Enable health checks</span>
-        </label>
-      </div>
-
-      {formData.monitorEnabled && (
-        <div className="mb-4">
-          <label htmlFor="service-monitor-url" className="block text-sm font-medium mb-1">Health check URL</label>
-          <input
-            type="url"
-            id="service-monitor-url"
-            name="monitorUrl"
-            value={formData.monitorUrl}
-            onChange={handleChange}
-            className="w-full px-3 py-2 border rounded-md dark:bg-dark-800 dark:border-gray-700"
-            placeholder="Leave blank to use the service URL"
-          />
-        </div>
-      )}
-
-      <div className="flex justify-between items-center">
-        {onDelete && (
-          <button
-            type="button"
-            onClick={onDelete}
-            className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
-          >
-            <FontAwesomeIcon icon={faTrash} className="mr-1" />
-            Delete
-          </button>
-        )}
-
-        <div className="flex space-x-2 ml-auto">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 bg-gray-200 dark:bg-dark-600 rounded-md hover:bg-gray-300 dark:hover:bg-dark-500 transition-colors"
-          >
-            <FontAwesomeIcon icon={faTimes} className="mr-1" />
-            Cancel
-          </button>
-          <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors">
-            <FontAwesomeIcon icon={onDelete ? faSave : faPlus} className="mr-1" />
-            {submitLabel}
-          </button>
-        </div>
-      </div>
-    </form>
-  )
+  return <Form onSubmit={submit}>
+    <div className="field"><label htmlFor="service-name">Name</label>
+      <Input id="service-name" name="name" value={formData.name} onValueChange={(value) => update('name', value)} placeholder="Example: Jellyfin" required />
+    </div>
+    <div className="field"><label htmlFor="service-logo">Logo path</label>
+      <Input id="service-logo" name="logo" value={formData.logo} onValueChange={(value) => update('logo', value)} placeholder="Leave blank to fetch the favicon automatically" />
+    </div>
+    <div className="field"><label htmlFor="service-url">URL</label>
+      <Input id="service-url" name="url" type="url" value={formData.url} onValueChange={(value) => update('url', value)} placeholder="https://service.example" required />
+    </div>
+    <div className="field"><label htmlFor="service-target">Open behavior</label>
+      <SelectControl id="service-target" name="target" value={formData.target ?? '_blank'} onValueChange={(value) => update('target', value)} items={[{value:'_blank',label:'New tab (_blank)'},{value:'_self',label:'Same tab (_self)'}]} />
+    </div>
+    <label className="checkbox-field">
+      <Checkbox.Root name="monitorEnabled" checked={Boolean(formData.monitorEnabled)} onCheckedChange={(checked) => update('monitorEnabled', checked)} className="checkbox" aria-label="Enable health checks"><Checkbox.Indicator>✓</Checkbox.Indicator></Checkbox.Root>
+      <span>Enable health checks</span>
+    </label>
+    {formData.monitorEnabled && <div className="field"><label htmlFor="service-monitor-url">Health check URL</label>
+      <Input id="service-monitor-url" name="monitorUrl" type="url" value={formData.monitorUrl ?? ''} onValueChange={(value) => update('monitorUrl', value)} placeholder="Leave blank to use the service URL" />
+    </div>}
+    <div className="wm-form-actions">
+      {onDelete && <Button className="wm-form-button--danger" onClick={onDelete}>Delete</Button>}
+      <div className="wm-form-actions__confirm"><Button onClick={onCancel}>Cancel</Button><Button type="submit" className="primary">{submitLabel}</Button></div>
+    </div>
+  </Form>
 }

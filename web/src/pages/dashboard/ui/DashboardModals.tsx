@@ -1,12 +1,12 @@
-import type { QueryObserverResult } from '@tanstack/react-query'
 import type { AuditLog } from '@/shared/api'
-import type { CategoryWithServices, ServiceFormData, ServiceViewModel } from '../model/dashboard'
+import Modal from '@/shared/ui/Modal'
+import type { CategoryWithServices, ServiceFormData } from '../model/dashboard'
 import type { AddingService, EditingCategory, EditingService } from '../model/use-dashboard'
 import AuditLogPanel from './AuditLogPanel'
 import CategoryForm from './CategoryForm'
 import ServiceForm from './ServiceForm'
 
-type DashboardModalsProps = {
+type Props = {
   isAddingCategory: boolean
   isEditMode: boolean
   editingService: EditingService | null
@@ -16,134 +16,35 @@ type DashboardModalsProps = {
   auditLogs: AuditLog[]
   auditLogsLoading: boolean
   auditLogsError: string | null
-  onRefreshAuditLogs: () => Promise<QueryObserverResult<AuditLog[], Error>>
+  onRefreshAuditLogs: () => void
   onCloseAuditLogs: () => void
   onCloseAddCategory: () => void
   onAddCategory: (category: CategoryWithServices) => void
   onCloseEditService: () => void
   onEditService: (categoryName: string, service: ServiceFormData, serviceIndex: number) => void
-  onDeleteService: (categoryName: string, serviceIndex: number) => void
+  onDeleteService: (categoryName: string, serviceIndex: number) => Promise<boolean>
   onCloseAddService: () => void
   onAddService: (categoryName: string, service: ServiceFormData) => void
   onCloseEditCategory: () => void
   onEditCategory: (categoryIndex: number, category: Pick<CategoryWithServices, 'name' | 'icon'>) => void
-  onDeleteCategory: (categoryName: string) => void
+  onDeleteCategory: (categoryName: string) => Promise<boolean>
 }
-
-export default function DashboardModals({
-  isAddingCategory,
-  isEditMode,
-  editingService,
-  addingService,
-  editingCategory,
-  auditLogsOpen,
-  auditLogs,
-  auditLogsLoading,
-  auditLogsError,
-  onRefreshAuditLogs,
-  onCloseAuditLogs,
-  onCloseAddCategory,
-  onAddCategory,
-  onCloseEditService,
-  onEditService,
-  onDeleteService,
-  onCloseAddService,
-  onAddService,
-  onCloseEditCategory,
-  onEditCategory,
-  onDeleteCategory,
-}: DashboardModalsProps) {
-  return (
-    <>
-      {isAddingCategory && isEditMode && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={onCloseAddCategory}
-        >
-          <div className="chassis-modal max-w-md w-full mx-4 p-6" onClick={(event) => event.stopPropagation()}>
-            <CategoryForm
-              title="Add new category"
-              submitLabel="Add category"
-              onSubmit={(category) => onAddCategory({ ...category, list: [] })}
-              onCancel={onCloseAddCategory}
-            />
-          </div>
-        </div>
-      )}
-
-      {auditLogsOpen && (
-        <AuditLogPanel
-          logs={auditLogs}
-          loading={auditLogsLoading}
-          error={auditLogsError}
-          onRefresh={onRefreshAuditLogs}
-          onClose={onCloseAuditLogs}
-        />
-      )}
-
-      {editingService && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={onCloseEditService}
-        >
-          <div className="chassis-modal max-w-md w-full mx-4 p-6" onClick={(event) => event.stopPropagation()}>
-            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Edit service</h3>
-            <ServiceForm
-              initialValue={editingService.service}
-              submitLabel="Save"
-              onSubmit={(updatedService) =>
-                onEditService(editingService.categoryName, updatedService, editingService.serviceIndex)
-              }
-              onCancel={onCloseEditService}
-              onDelete={() => {
-                if (window.confirm(`Delete service "${editingService.service.name}"?`)) {
-                  onDeleteService(editingService.categoryName, editingService.serviceIndex)
-                  onCloseEditService()
-                }
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {addingService && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={onCloseAddService}
-        >
-          <div className="chassis-modal max-w-md w-full mx-4 p-6" onClick={(event) => event.stopPropagation()}>
-            <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-gray-100">Add service</h3>
-            <ServiceForm
-              submitLabel="Add"
-              onSubmit={(newService) => onAddService(addingService.categoryName, newService)}
-              onCancel={onCloseAddService}
-            />
-          </div>
-        </div>
-      )}
-
-      {editingCategory && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-          onClick={onCloseEditCategory}
-        >
-          <div className="chassis-modal max-w-md w-full mx-4 p-6" onClick={(event) => event.stopPropagation()}>
-            <CategoryForm
-              title="Edit category"
-              initialValue={editingCategory.category}
-              submitLabel="Save"
-              onSubmit={(updatedCategory) => onEditCategory(editingCategory.categoryIndex, updatedCategory)}
-              onCancel={onCloseEditCategory}
-              onDelete={() => {
-                if (window.confirm(`Delete category "${editingCategory.category.name}"?\nThis will delete all services in this category.`)) {
-                  onDeleteCategory(editingCategory.category.name)
-                  onCloseEditCategory()
-                }
-              }}
-            />
-          </div>
-        </div>
-      )}
-    </>
-  )
+export default function DashboardModals(p: Props) {
+  return <>
+    <Modal open={p.isAddingCategory && p.isEditMode} title="Add category" onClose={p.onCloseAddCategory}>
+      <CategoryForm title="Add new category" submitLabel="Add category" onSubmit={(category) => p.onAddCategory({ ...category, list: [] })} onCancel={p.onCloseAddCategory} />
+    </Modal>
+    <Modal open={Boolean(p.editingService)} title="Edit service" onClose={p.onCloseEditService}>
+      {p.editingService && <ServiceForm initialValue={p.editingService.service} submitLabel="Save" onSubmit={(service) => p.onEditService(p.editingService!.categoryName, service, p.editingService!.serviceIndex)} onCancel={p.onCloseEditService}
+        onDelete={async () => { if (await p.onDeleteService(p.editingService!.categoryName, p.editingService!.serviceIndex)) p.onCloseEditService() }} />}
+    </Modal>
+    <Modal open={Boolean(p.addingService)} title="Add service" onClose={p.onCloseAddService}>
+      {p.addingService && <ServiceForm submitLabel="Add" onSubmit={(service) => p.onAddService(p.addingService!.categoryName, service)} onCancel={p.onCloseAddService} />}
+    </Modal>
+    <Modal open={Boolean(p.editingCategory)} title="Edit category" onClose={p.onCloseEditCategory}>
+      {p.editingCategory && <CategoryForm title="Edit category" initialValue={p.editingCategory.category} submitLabel="Save" onSubmit={(category) => p.onEditCategory(p.editingCategory!.categoryIndex, category)} onCancel={p.onCloseEditCategory}
+        onDelete={async () => { if (await p.onDeleteCategory(p.editingCategory!.category.name)) p.onCloseEditCategory() }} />}
+    </Modal>
+    <AuditLogPanel open={p.auditLogsOpen} logs={p.auditLogs} loading={p.auditLogsLoading} error={p.auditLogsError} onRefresh={p.onRefreshAuditLogs} onClose={p.onCloseAuditLogs} />
+  </>
 }

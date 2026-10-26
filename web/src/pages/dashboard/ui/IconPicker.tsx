@@ -1,3 +1,4 @@
+import { Button } from '@base-ui/react/button'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { categoryIconOptions } from './category-icons'
 
@@ -8,25 +9,22 @@ type IconPickerProps = {
 
 const IconPicker = ({ value = '', onChange }: IconPickerProps) => {
   return (
-    <div className="grid grid-cols-6 gap-2">
+    <div className="icon-grid">
       {categoryIconOptions.map((option) => {
         const isSelected = value === option.value
 
         return (
-          <button
+          <Button
             key={option.value}
             type="button"
             onClick={() => onChange(option.value)}
-            className={`p-3 rounded-md transition-colors flex items-center justify-center ${
-              isSelected
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-100 dark:bg-dark-700 hover:bg-blue-100 dark:hover:bg-blue-900/30'
-            }`}
+            className="wm-icon-option"
+            aria-pressed={isSelected}
             title={option.label}
             aria-label={option.label}
           >
-            <FontAwesomeIcon icon={option.icon} className="text-lg" />
-          </button>
+            <FontAwesomeIcon icon={option.icon}  />
+          </Button>
         )
       })}
     </div>

@@ -1,4 +1,6 @@
+import { Button } from '@base-ui/react/button'
 import ServiceItem from './ServiceItem'
+import type { DashboardLayout } from '../model/use-dashboard-layout'
 import { getServiceStatus } from '../model/dashboard'
 import type { ServiceStatus } from '@/shared/api'
 
@@ -20,6 +22,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -40,6 +43,7 @@ type SortableServiceItemProps = {
 }
 
 type ServiceCategoryProps = {
+  layout?: DashboardLayout
   category: CategoryWithServices
   onOpenEditService?: (service: ServiceViewModel, serviceIndex: number) => void
   onOpenAddService?: () => void
@@ -75,7 +79,7 @@ const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode,
   }
 
   return (
-    <li ref={setNodeRef} style={style}>
+    <li ref={setNodeRef} style={style} data-service-index={index}>
       <ServiceItem
         service={service}
         onOpenEdit={onOpenEdit}
@@ -89,6 +93,7 @@ const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode,
 }
 
 const ServiceCategory = ({
+  layout = 'vertical',
   category,
   onOpenEditService,
   onOpenAddService,
@@ -111,17 +116,8 @@ const ServiceCategory = ({
     })
   )
 
-  const handleDeleteService = (index: number) => {
-    if (onDeleteService && window.confirm(`Delete service "${category.list[index].name}"?`)) {
-      onDeleteService(index);
-    }
-  };
-
-  const handleDeleteCategory = () => {
-    if (onDeleteCategory && window.confirm(`Delete category "${category.name}"?\nThis will delete all services in this category.`)) {
-      onDeleteCategory();
-    }
-  };
+  const handleDeleteService = (index: number) => onDeleteService?.(index)
+  const handleDeleteCategory = () => onDeleteCategory?.()
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
@@ -136,33 +132,25 @@ const ServiceCategory = ({
   };
 
   return (
-    <div className={`rack-section flex flex-col w-full p-2`}>
-      <h2 className="rack-section__header group-title truncate text-2xl mt-2 mb-4 flex items-center justify-between">
-        <span className="rack-section__label flex items-center">
+    <div className="rack-section" data-category-name={category.name}>
+      <h2 tabIndex={0} className="rack-section__header">
+        <span className="rack-section__label">
           {/* Category icon doubles as the drag handle in edit mode. */}
-          <span
-            {...(isEditMode ? dragHandleProps : {})}
-            className={`rack-section__icon fa-lg pr-1 ${
-              isEditMode
-                ? 'cursor-grab active:cursor-grabbing p-2 -ml-2 rounded-md transition-colors'
-                : ''
-            }`}
-            title={isEditMode ? 'Drag to reorder' : ''}
-          >
-            <FontAwesomeIcon icon={getCategoryIcon(category.icon)} />
-          </span>
+          {isEditMode
+            ? <Button nativeButton={false} render={<span />} {...dragHandleProps} className="rack-section__icon" title="Drag to reorder"><FontAwesomeIcon icon={getCategoryIcon(category.icon)} /></Button>
+            : <span className="rack-section__icon"><FontAwesomeIcon icon={getCategoryIcon(category.icon)} /></span>}
           {category.name}
         </span>
         {/* Category edit button, only visible in edit mode. */}
         {isEditMode && onEditCategory && (
-          <button
+          <Button
             onClick={onEditCategory}
-            className="chassis-icon-button p-2 transition-colors text-lg"
+            className="chassis-icon-button"
             aria-label={`Edit category ${category.name}`}
             title="Edit category"
           >
             <FontAwesomeIcon icon={faEdit} />
-          </button>
+          </Button>
         )}
       </h2>
       <DndContext
@@ -172,9 +160,9 @@ const ServiceCategory = ({
       >
         <SortableContext
           items={category.list.map((service, idx) => getServiceSortableId(service, idx))}
-          strategy={verticalListSortingStrategy}
+          strategy={layout === 'horizontal' ? rectSortingStrategy : verticalListSortingStrategy}
         >
-          <ul>
+          <ul className="rack-section__services">
             {category.list.map((service, index) => (
               <SortableServiceItem
                 key={getServiceSortableId(service, index)}
@@ -189,14 +177,14 @@ const ServiceCategory = ({
             {/* Add service button, only visible in edit mode. */}
             {isEditMode && (
               <li>
-                <button
+                <Button
                   onClick={onOpenAddService}
-                  className="drive-bay drive-bay--add w-full flex items-center justify-center p-4 transition duration-300 ease-in-out mb-6 cursor-pointer"
+                  className="drive-bay drive-bay--add"
                   aria-label={`Add service to ${category.name}`}
                 >
-                  <FontAwesomeIcon icon={faPlus} className="mr-2 text-xl" />
-                  <span className="font-semibold">Add service</span>
-                </button>
+                  <FontAwesomeIcon icon={faPlus}  />
+                  <span >Add service</span>
+                </Button>
               </li>
             )}
           </ul>

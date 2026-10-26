@@ -190,6 +190,9 @@ func StaticFallbackHandler(staticDir string) http.Handler {
 		path := filepath.Clean(r.URL.Path)
 		fullPath := filepath.Join(staticDir, path)
 		if info, err := os.Stat(fullPath); err == nil && !info.IsDir() {
+			if filepath.Ext(path) == ".webmanifest" {
+				w.Header().Set("Content-Type", "application/manifest+json")
+			}
 			files.ServeHTTP(w, r)
 			return
 		}

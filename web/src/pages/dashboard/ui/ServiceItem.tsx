@@ -1,202 +1,30 @@
-import { useState, type CSSProperties, type KeyboardEvent, type MouseEvent } from 'react'
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { Button } from '@base-ui/react/button'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faEdit } from '@fortawesome/free-solid-svg-icons'
 import type { ServiceStatus } from '@/shared/api'
 import type { DragHandleProps, ServiceViewModel } from '../model/dashboard'
 
-type ServiceItemProps = {
-  service: ServiceViewModel
-  onOpenEdit?: () => void
-  onDelete?: () => void
-  isEditMode?: boolean
-  dragHandleProps?: DragHandleProps
-  status?: ServiceStatus
-}
+type Props = { service: ServiceViewModel; onOpenEdit?: () => void; onDelete?: () => void; isEditMode?: boolean; dragHandleProps?: DragHandleProps; status?: ServiceStatus }
+const escapeSVGText = (value: string) => value.replace(/[&<>"']/g, (char) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&apos;' }[char] ?? char))
 
-type StatusStyle = CSSProperties & Record<
-  | '--status-delay'
-  | '--status-duration'
-  | '--status-spark-delay'
-  | '--status-spark-duration'
-  | '--status-idle-color'
-  | '--status-off-color'
-  | '--status-on-color'
-  | '--status-hot-color'
-  | '--status-glow-alpha'
-  | '--status-hot-alpha'
-  | '--status-reflect-alpha',
-  string
->
-
-const getStableHash = (value?: string) =>
-  Array.from(value || '').reduce((hash, char) => {
-    const nextHash = ((hash << 5) - hash) + char.charCodeAt(0)
-    return nextHash >>> 0
-  }, 0)
-
-const getFallbackColor = (service: ServiceViewModel) => {
-  const seed = getStableHash(`${service.name}:${service.url}`)
-  const hue = seed % 360
-  const saturation = 62 + (seed % 18)
-  const lightness = 38 + (seed % 14)
-  return `hsl(${hue} ${saturation}% ${lightness}%)`
-}
-
-const getStatusSeed = (service: ServiceViewModel, key: string) =>
-  getStableHash(`${service.name}:${service.url}:${key}`)
-
-const escapeSVGText = (value: string) =>
-  value.replace(/[&<>"']/g, (char) => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&apos;',
-  }[char] ?? char))
-
-const ServiceItem = ({ service, onOpenEdit, isEditMode, dragHandleProps, status }: ServiceItemProps) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleClick = () => {
-    window.open(service.url, service.target || '_blank')
-  }
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      handleClick()
-    }
-  }
-
-  const getImagePath = (logo?: string) => {
-    const automaticIcon = service.id ? `/api/v1/services/${encodeURIComponent(service.id)}/icon` : getFallbackLogo()
-    const value = logo?.trim() ?? ''
-
-    if (!value || value.startsWith('assets/icons/')) {
-      return automaticIcon
-    }
-    if (value.startsWith('http') || value.startsWith('/')) {
-      return value
-    }
-
-    return value
-  }
-
-  const handleEditClick = (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
-    onOpenEdit?.();
-  }
-
-  const getStatusClass = () => {
-    if (!status) return 'status-port status-port-pending';
-    return status.status === 'up' ? 'status-port status-online' : 'status-port status-port-down';
-  }
-
-  const getStatusStyle = (): StatusStyle | undefined => {
-    if (status?.status !== 'up') return undefined;
-    const primary = getStatusSeed(service, 'primary')
-    const secondary = getStatusSeed(service, 'secondary')
-    const intensity = getStatusSeed(service, 'intensity')
-    const hue = 122 + (intensity % 14)
-    const idleLightness = 13 + (intensity % 7)
-    const onLightness = 44 + (secondary % 12)
-    return {
-      '--status-delay': `${(primary % 193) / 100}s`,
-      '--status-duration': `${1.18 + (primary % 67) / 100}s`,
-      '--status-spark-delay': `${(secondary % 251) / 100}s`,
-      '--status-spark-duration': `${0.72 + (secondary % 89) / 100}s`,
-      '--status-idle-color': `hsl(${hue} 72% ${idleLightness}%)`,
-      '--status-off-color': `hsl(${hue} 76% ${Math.max(7, idleLightness - 7)}%)`,
-      '--status-on-color': `hsl(${hue} 82% ${onLightness}%)`,
-      '--status-hot-color': `hsl(${hue} 92% ${Math.min(68, onLightness + 12)}%)`,
-      '--status-glow-alpha': String(0.32 + (intensity % 26) / 100),
-      '--status-hot-alpha': String(0.68 + (secondary % 24) / 100),
-      '--status-reflect-alpha': String(0.22 + (primary % 20) / 100),
-    };
-  }
-
-  const getStatusTitle = () => {
-    if (!service.monitorEnabled) return 'Health checks disabled';
-    if (!status) return 'Checking status';
-    if (status.status === 'up') {
-      return `UP · ${status.responseTimeMs || 0}ms`;
-    }
-    return status.error ? `DOWN · ${status.error}` : 'DOWN';
-  }
-
-  const getStatusLatency = () => {
-    if (!status) return '--ms'
-    if (status.status !== 'up') return 'DOWN'
-    return `${status.responseTimeMs || 0}ms`
-  }
-
-  const getFallbackLogo = () => {
-    const initial = (service.name || '?').trim().charAt(0).toUpperCase() || '?'
-    const background = getFallbackColor(service)
-    const svg = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-        <rect width="64" height="64" rx="14" fill="${background}"/>
-        <text x="32" y="40" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif" font-size="28" font-weight="700" fill="#ffffff">${escapeSVGText(initial)}</text>
-      </svg>
-    `
+export default function ServiceItem({ service, onOpenEdit, isEditMode, dragHandleProps, status }: Props) {
+  const fallback = () => {
+    const initial = escapeSVGText((service.name || '?').trim().charAt(0).toUpperCase())
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="#665c54"/><text x="32" y="43" text-anchor="middle" font-family="monospace" font-size="36" fill="#ebdbb2">${initial}</text></svg>`
     return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
   }
-
-  return (
-    <div
-      className="drive-bay flex items-center p-2 transition duration-300 ease-in-out mb-4 cursor-pointer relative"
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      tabIndex={0}
-      aria-label={`Visit ${service.name}`}
-      role="button"
-    >
-      {service.monitorEnabled && (
-        <span className="drive-bay__status" title={getStatusTitle()}>
-          <span
-            className={getStatusClass()}
-            style={getStatusStyle()}
-            aria-label={`${service.name} service status ${status?.status || 'unknown'}`}
-          />
-          <span className="drive-bay__latency">{getStatusLatency()}</span>
-        </span>
-      )}
-      {/* Logo doubles as the drag handle in edit mode. */}
-      <span
-        {...(isEditMode ? dragHandleProps : {})}
-        className={`drive-bay__logo w-8 h-8 xl:w-12 xl:h-12 mr-2 xl:mr-4 flex flex-none items-center justify-center ${
-          isEditMode ? 'cursor-grab active:cursor-grabbing' : ''
-        }`}
-        title={isEditMode ? 'Drag to reorder' : ''}
-        onClick={(e: MouseEvent<HTMLSpanElement>) => isEditMode && e.stopPropagation()}
-      >
-        <img
-          src={getImagePath(service.logo)}
-          alt={`${service.name} logo`}
-          className="w-full h-full object-contain"
-          loading="lazy"
-          decoding="async"
-          onError={(e) => {
-            e.currentTarget.src = getFallbackLogo()
-          }}
-        />
-      </span>
-      <p className="drive-bay__name min-w-0 flex-1 font-bold text-base truncate">{service.name}</p>
-
-      {/* Edit button, only visible in edit mode while hovered. */}
-      {isEditMode && isHovered && (
-        <button
-          className="drive-bay__edit absolute top-2 right-14 p-1"
-          onClick={handleEditClick}
-          aria-label={`Edit ${service.name}`}
-        >
-          <FontAwesomeIcon icon={faEdit} />
-        </button>
-      )}
-    </div>
-  )
+  const logo = service.logo?.trim() ?? ''
+  const automaticIcon = service.id ? `/api/v1/services/${encodeURIComponent(service.id)}/icon` : fallback()
+  const image = <img src={!logo || logo.startsWith('assets/icons/') ? automaticIcon : logo} alt={`${service.name} logo`} loading="lazy" decoding="async" onError={(event) => { event.currentTarget.src = fallback() }} />
+  return <Button nativeButton={false} render={<div />} className="drive-bay" onClick={() => window.open(service.url, service.target || '_blank')} aria-label={`Visit ${service.name}`}>
+    {service.monitorEnabled && <span className="drive-bay__status" title={status?.status === 'up' ? `UP · ${status.responseTimeMs || 0}ms` : status?.error || 'Checking status'}>
+      <span className={`status-port ${!status ? 'status-port-pending' : status.status === 'up' ? 'status-online' : 'status-port-down'}`} aria-label={`${service.name} service status ${status?.status || 'unknown'}`} />
+      <span className="drive-bay__latency">{!status ? '--ms' : status.status === 'up' ? `${status.responseTimeMs || 0}ms` : 'DOWN'}</span>
+    </span>}
+    {isEditMode
+      ? <Button nativeButton={false} render={<span />} {...dragHandleProps} className="drive-bay__logo" title="Drag to reorder" onClick={(event) => event.stopPropagation()}>{image}</Button>
+      : <span className="drive-bay__logo">{image}</span>}
+    <span className="drive-bay__name">{service.name}</span>
+    {isEditMode && <Button className="drive-bay__edit" onClick={(event) => { event.stopPropagation(); onOpenEdit?.() }} aria-label={`Edit ${service.name}`}><FontAwesomeIcon icon={faEdit} /></Button>}
+  </Button>
 }
-
-export default ServiceItem 

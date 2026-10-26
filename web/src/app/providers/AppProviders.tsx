@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { ThemeProvider } from '@/shared/ui/theme'
+import { UIProvider } from '@/shared/ui/UIProvider'
 import { QueryProvider } from './QueryProvider'
 
 type AppProvidersProps = {
@@ -9,7 +10,7 @@ type AppProvidersProps = {
 export function AppProviders({ children }: AppProvidersProps) {
   return (
     <QueryProvider>
-      <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider><UIProvider>{children}</UIProvider></ThemeProvider>
     </QueryProvider>
   )
 }
