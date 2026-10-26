@@ -222,3 +222,5 @@ npm --prefix web run test:e2e
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/zouzonghua/homelab-dashboard/blob/main/LICENSE)
 
 Copyright (c) 2021 - Now zouzonghua
+
+开发流程采用 [main-only + GitHub Flow](CONTRIBUTING.md)。

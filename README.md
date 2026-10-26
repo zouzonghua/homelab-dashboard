@@ -222,3 +222,5 @@ Pull requests and issues are welcome.
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/zouzonghua/homelab-dashboard/blob/main/LICENSE)
 
 Copyright (c) 2021 - Now zouzonghua
+
+Development follows [main-only + GitHub Flow](CONTRIBUTING.md).
