@@ -1,9 +1,10 @@
 import type { CSSProperties } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faEdit, faCheck } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faEdit, faCheck, faTableColumns, faTableList } from "@fortawesome/free-solid-svg-icons";
 // import Avatar from '@/assets/icons/Avatar.jpg'
 import ThemeToggle from '@/shared/ui/ThemeToggle'
 import ConfigTools from './ConfigTools'
+import type { DashboardLayout } from '../model/use-dashboard-layout'
 import type { ServiceStatus } from '@/shared/api'
 import {
   getServiceStatus,
@@ -15,6 +16,8 @@ const  Avatar = 'https://avatars.githubusercontent.com/u/53508103?v=4'
 
 type HeaderProps = {
   title: string
+  layout: DashboardLayout
+  onToggleLayout: () => void
   onExportConfig: () => void
   onImportConfig: (file: File) => void
   onOpenAuditLogs: () => void
@@ -81,6 +84,8 @@ const getCategoryLedStyle = (category: CategoryWithServices): StatusLedStyle => 
 
 const Header = ({
   title,
+  layout,
+  onToggleLayout,
   onExportConfig,
   onImportConfig,
   onOpenAuditLogs,
@@ -101,7 +106,7 @@ const Header = ({
         <div className="chassis-title head__title flex flex-1 text-xl md:text-3xl items-center pl-4">
           <h1>{title}</h1>
         </div>
-        <div className="flex items-center justify-end pr-4 space-x-4">
+        <div className="flex shrink-0 items-center justify-end space-x-2 md:pr-4 md:space-x-4">
           <div className="chassis-header__leds hidden md:flex" aria-hidden="true">
             {categories.map((category) => {
               const led = getCategoryLed(category, serviceStatus)
@@ -145,6 +150,15 @@ const Header = ({
               <FontAwesomeIcon icon={faPlus} className="text-xl" />
             </button>
           )}
+
+          <button
+            onClick={onToggleLayout}
+            className="chassis-icon-button p-2 transition-colors"
+            aria-label={`Switch to ${layout === 'vertical' ? 'horizontal' : 'vertical'} layout`}
+            title={`Switch to ${layout === 'vertical' ? 'horizontal' : 'vertical'} layout`}
+          >
+            <FontAwesomeIcon icon={layout === 'vertical' ? faTableList : faTableColumns} className="text-xl" />
+          </button>
 
           <ThemeToggle />
         </div>

@@ -18,10 +18,13 @@ A modern homelab dashboard for managing and monitoring self-hosted services.
 
 ![Homelab Dashboard light mode](assets/readme/dashboard-light.png)
 
+![Homelab Dashboard horizontal layout](assets/readme/dashboard-horizontal.png)
+
 ## Features
 
 - [x] 🎯 One-click access to common services
 - [x] 🌙 Dark mode support
+- [x] ↔️ Horizontal/vertical layouts with a remembered browser preference
 - [x] 📱 Responsive layout for mobile devices
 - [x] 📄 Config import and export
 - [x] 🔧 Service editing

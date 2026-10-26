@@ -1,4 +1,5 @@
 import ServiceItem from './ServiceItem'
+import type { DashboardLayout } from '../model/use-dashboard-layout'
 import { getServiceStatus } from '../model/dashboard'
 import type { ServiceStatus } from '@/shared/api'
 
@@ -20,6 +21,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
+  rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -40,6 +42,7 @@ type SortableServiceItemProps = {
 }
 
 type ServiceCategoryProps = {
+  layout?: DashboardLayout
   category: CategoryWithServices
   onOpenEditService?: (service: ServiceViewModel, serviceIndex: number) => void
   onOpenAddService?: () => void
@@ -89,6 +92,7 @@ const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode,
 }
 
 const ServiceCategory = ({
+  layout = 'vertical',
   category,
   onOpenEditService,
   onOpenAddService,
@@ -172,9 +176,9 @@ const ServiceCategory = ({
       >
         <SortableContext
           items={category.list.map((service, idx) => getServiceSortableId(service, idx))}
-          strategy={verticalListSortingStrategy}
+          strategy={layout === 'horizontal' ? rectSortingStrategy : verticalListSortingStrategy}
         >
-          <ul>
+          <ul className="rack-section__services">
             {category.list.map((service, index) => (
               <SortableServiceItem
                 key={getServiceSortableId(service, index)}

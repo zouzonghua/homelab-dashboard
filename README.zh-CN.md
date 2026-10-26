@@ -18,10 +18,13 @@
 
 ![Homelab Dashboard 浅色模式](assets/readme/dashboard-light.png)
 
+![Homelab Dashboard 横排布局](assets/readme/dashboard-horizontal.png)
+
 ## 功能特点
 
 - [x] 🎯 一键访问常用服务
 - [x] 🌙 支持暗黑模式
+- [x] ↔️ 横排 / 竖排布局切换，浏览器自动记住选择
 - [x] 📱 响应式设计，支持移动端
 - [x] 📄 支持导入导出配置
 - [x] 🔧 支持编辑服务

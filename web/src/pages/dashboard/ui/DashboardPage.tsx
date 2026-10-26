@@ -1,12 +1,14 @@
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
 import { useDashboard } from '../model/use-dashboard'
+import { useDashboardLayout } from '../model/use-dashboard-layout'
 import DashboardModals from './DashboardModals'
 import Header from './Header'
 import ServiceGrid from './ServiceGrid'
 
 export default function DashboardPage() {
   const dashboard = useDashboard()
+  const { layout, toggleLayout } = useDashboardLayout()
 
   if (dashboard.loading) return (
     <div className="chassis-app flex items-center justify-center h-full">
@@ -24,6 +26,8 @@ export default function DashboardPage() {
     <div className="chassis-app overflow-auto h-full w-screen flex flex-col items-center xl:flex-col">
       <Header
         title={dashboard.config?.title || 'HomeLab Dashboard'}
+        layout={layout}
+        onToggleLayout={toggleLayout}
         onExportConfig={dashboard.exportConfig}
         onImportConfig={dashboard.importConfig}
         onOpenAuditLogs={dashboard.openAuditLogs}
@@ -56,6 +60,7 @@ export default function DashboardPage() {
 
       <ServiceGrid
         categories={dashboard.config?.items || []}
+        layout={layout}
         columns={dashboard.config?.columns || 4}
         onOpenEditService={dashboard.openEditService}
         onOpenAddService={dashboard.openAddService}

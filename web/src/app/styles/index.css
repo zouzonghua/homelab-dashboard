@@ -271,6 +271,14 @@ html, body {
   top: 0.75rem;
 }
 
+@media (min-width: 768px) {
+  .chassis-rack--horizontal .rack-section__services {
+    display: grid;
+    grid-template-columns: repeat(var(--dashboard-columns), minmax(0, 1fr));
+    column-gap: 1rem;
+  }
+}
+
 .rack-section__header {
   color: #233044;
   border-bottom: 1px solid rgba(71, 85, 105, 0.28);

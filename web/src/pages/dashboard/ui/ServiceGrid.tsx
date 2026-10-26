@@ -1,3 +1,5 @@
+import type { CSSProperties } from 'react'
+import type { DashboardLayout } from '../model/use-dashboard-layout'
 import ServiceCategory from './ServiceCategory'
 import {
   DndContext,
@@ -28,6 +30,7 @@ type SortableCategoryItemProps = {
   category: CategoryWithServices
   index: number
   columnClass: string
+  layout: DashboardLayout
   onOpenEditService?: BivariantCallback<[string, ServiceViewModel, number]>
   onOpenAddService?: BivariantCallback<[string]>
   onDeleteService?: BivariantCallback<[string, number]>
@@ -41,6 +44,7 @@ type SortableCategoryItemProps = {
 type ServiceGridProps = {
   categories: CategoryWithServices[]
   columns?: string | number
+  layout?: DashboardLayout
   onOpenEditService?: BivariantCallback<[string, ServiceViewModel, number]>
   onOpenAddService?: BivariantCallback<[string]>
   onDeleteService?: BivariantCallback<[string, number]>
@@ -53,7 +57,7 @@ type ServiceGridProps = {
 }
 
 // Sortable category item.
-const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }: SortableCategoryItemProps) => {
+const SortableCategoryItem = ({ category, index, columnClass, layout, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }: SortableCategoryItemProps) => {
   const {
     attributes,
     listeners,
@@ -79,6 +83,7 @@ const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService,
     >
       <ServiceCategory
         category={category}
+        layout={layout}
         onOpenEditService={(service, serviceIndex) =>
           onOpenEditService?.(category.name, service, serviceIndex)
         }
@@ -97,7 +102,7 @@ const SortableCategoryItem = ({ category, index, columnClass, onOpenEditService,
   )
 }
 
-const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderCategories, onReorderServices, isEditMode, serviceStatus }: ServiceGridProps) => {
+const ServiceGrid = ({ categories, columns, layout = 'vertical', onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderCategories, onReorderServices, isEditMode, serviceStatus }: ServiceGridProps) => {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -109,9 +114,12 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
     })
   )
 
+  const parsedColumns = parseInt(String(columns))
+  const columnCount = parsedColumns >= 1 && parsedColumns <= 6 ? parsedColumns : 4
+
   // Calculate the width class for each card.
   const getColumnClass = () => {
-    switch (parseInt(String(columns))) {
+    switch (columnCount) {
       case 1: return 'w-full'
       case 2: return 'w-full md:w-1/2'
       case 3: return 'w-full md:w-1/3'
@@ -135,7 +143,11 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
   }
 
   return (
-    <div className="chassis-rack container max-w-screen-xl p-2 xl:p-0 xl:mt-4">
+    <div
+      className={`chassis-rack container max-w-screen-xl p-2 xl:p-0 xl:mt-4${layout === 'horizontal' ? ' chassis-rack--horizontal' : ''}`}
+      style={{ '--dashboard-columns': columnCount } as CSSProperties}
+      data-layout={layout}
+    >
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -151,7 +163,8 @@ const ServiceGrid = ({ categories, columns, onOpenEditService, onOpenAddService,
                 key={category.name}
                 category={category}
                 index={index}
-                columnClass={getColumnClass()}
+                columnClass={layout === 'horizontal' ? 'w-full' : getColumnClass()}
+                layout={layout}
                 onOpenEditService={onOpenEditService}
                 onOpenAddService={onOpenAddService}
                 onDeleteService={onDeleteService}
