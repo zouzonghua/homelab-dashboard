@@ -72,8 +72,9 @@ export function buildDashboardViewModel(
 }
 
 export async function fetchDashboardConfig(): Promise<DashboardViewModel> {
-  const [settings, categories, services] = await Promise.all([
-    dashboardApi.getSettings(),
+  // Settings initializes an empty database from the configured JSON seed.
+  const settings = await dashboardApi.getSettings()
+  const [categories, services] = await Promise.all([
     dashboardApi.listCategories(),
     dashboardApi.listServices(),
   ])

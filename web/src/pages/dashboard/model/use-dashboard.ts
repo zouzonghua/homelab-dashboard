@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'react-toastify'
+import { notify as toast } from '@/shared/ui/notifications'
+import { useConfirm } from '@/shared/ui/UIProvider'
 import { subscribeStatus } from '@/shared/api'
 import { dashboardQueries } from '../api/dashboard-queries'
 import {
@@ -33,6 +34,7 @@ export type EditingCategory = {
 }
 
 export function useDashboard() {
+  const confirm = useConfirm()
   const queryClient = useQueryClient()
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -60,7 +62,7 @@ export function useDashboard() {
 
   useEffect(() => {
     if (!config) return
-    document.title = config.title || 'HomeLab Dashboard'
+    document.title = config.title || 'Homelab'
   }, [config])
 
   useEffect(() => {
@@ -109,19 +111,11 @@ export function useDashboard() {
         queryClient.invalidateQueries({ queryKey: dashboardQueries.status().queryKey }),
         queryClient.invalidateQueries({ queryKey: dashboardQueries.auditLogs().queryKey }),
       ])
-      toast.success(variables.successMessage, {
-        autoClose: 1000,
-        hideProgressBar: true,
-        position: 'top-right',
-      })
+      toast.success(variables.successMessage)
     },
     onError: (error) => {
       console.error('Failed to save API config:', error)
-      toast.error('Failed to save to server', {
-        autoClose: 1000,
-        hideProgressBar: true,
-        position: 'top-right',
-      })
+      toast.error('Failed to save to server')
     },
   })
 
@@ -161,31 +155,13 @@ export function useDashboard() {
   }
 
   const handleAddService = (categoryName: string, newService: ServiceFormData) => {
-    setConfig((prevConfig) => {
-      if (!prevConfig) return prevConfig
-      const newConfig = { ...prevConfig }
-      const categoryIndex = newConfig.items.findIndex((item) => item.name === categoryName)
-
-      if (categoryIndex !== -1) {
-        newConfig.items[categoryIndex].list.push(newService)
-
-        const categoryId = newConfig.items[categoryIndex].id
-        if (categoryId == null) {
-          toast.error('Category is missing a server ID, cannot add service')
-          return newConfig
-        }
-
-        setTimeout(() => {
-          persistConfig(newConfig, `Service "${newService.name}" added`, {
-            action: 'createService',
-            categoryId,
-            service: newService,
-          })
-        }, 0)
-      }
-
-      return newConfig
-    })
+    if (!config) return
+    const categoryId = config.items.find((category) => category.name === categoryName)?.id
+    if (categoryId == null) {
+      toast.error('Category is missing a server ID, cannot add service')
+      return
+    }
+    void persistConfig(config, `Service "${newService.name}" added`, { action: 'createService', categoryId, service: newService })
     setAddingService(null)
   }
 
@@ -212,20 +188,8 @@ export function useDashboard() {
   }
 
   const handleAddCategory = (newCategory: CategoryWithServices) => {
-    setConfig((prevConfig) => {
-      if (!prevConfig) return prevConfig
-      const newConfig = { ...prevConfig }
-      newConfig.items.push(newCategory)
-
-      setTimeout(() => {
-        persistConfig(newConfig, `Category "${newCategory.name}" added`, {
-          action: 'createCategory',
-          category: newCategory,
-        })
-      }, 0)
-
-      return newConfig
-    })
+    if (!config) return
+    void persistConfig(config, `Category "${newCategory.name}" added`, { action: 'createCategory', category: newCategory })
     setIsAddingCategory(false)
   }
 
@@ -343,7 +307,7 @@ export function useDashboard() {
           queryClient.invalidateQueries({ queryKey: dashboardQueries.status().queryKey }),
           queryClient.invalidateQueries({ queryKey: dashboardQueries.auditLogs().queryKey }),
         ])
-        document.title = importedConfig.title || 'HomeLab Dashboard'
+        document.title = importedConfig.title || 'Homelab'
         toast.success('Config imported')
       }
     } catch (error) {
@@ -382,10 +346,19 @@ export function useDashboard() {
     toggleEditMode: handleToggleEditMode,
     editService: handleEditService,
     addService: handleAddService,
-    deleteService: handleDeleteService,
+    deleteService: async (categoryName: string, serviceIndex: number) => {
+      const service = config?.items.find((category) => category.name === categoryName)?.list[serviceIndex]
+      if (!service || !await confirm(`Delete service "${service.name}"?`)) return false
+      handleDeleteService(categoryName, serviceIndex)
+      return true
+    },
     addCategory: handleAddCategory,
     editCategory: handleEditCategory,
-    deleteCategory: handleDeleteCategory,
+    deleteCategory: async (categoryName: string) => {
+      if (!await confirm(`Delete category "${categoryName}"? This also deletes every service in the group.`)) return false
+      handleDeleteCategory(categoryName)
+      return true
+    },
     reorderCategories: handleReorderCategories,
     reorderServices: handleReorderServices,
     exportConfig: handleExportConfig,

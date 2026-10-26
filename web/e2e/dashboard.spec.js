@@ -10,10 +10,11 @@ test('loads dashboard and persists a new service after reload', async ({ page })
 
   await page.goto('/')
 
-  await expect(page.getByRole('heading', { name: /homelab dashboard/i })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Config tools' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Visit personal website' })).toHaveCount(0)
   await expect(page.getByText('Jellyfin')).toBeVisible()
   await expect(page.getByText('HOMELAB', { exact: true })).toHaveCount(0)
-  await expect(page.locator('.chassis-header__leds .status-port')).toHaveCount(4)
+  await expect(page.locator('.chassis-header__leds .status-port')).toHaveCount(0)
   expect(statusRequests).toHaveLength(0)
 
   await page.getByRole('button', { name: 'Enter edit mode' }).click()
@@ -21,7 +22,7 @@ test('loads dashboard and persists a new service after reload', async ({ page })
 
   await page.getByLabel('Name').fill('E2E Service')
   await page.getByLabel('URL').fill('https://example.com/e2e')
-  await page.getByLabel('Enable health checks').check()
+  await page.getByRole('checkbox', { name: 'Enable health checks' }).check()
   await page.getByLabel('Health check URL').fill('http://127.0.0.1:4174/api/v1/dashboard')
   await Promise.all([
     page.waitForResponse((response) =>
@@ -71,37 +72,99 @@ test('switches layout geometry and remembers the choice after reload', async ({ 
   await expect(page.getByRole('button', { name: 'Switch to horizontal layout' })).toBeVisible()
 })
 
-test('keeps layout controls and cards within a mobile viewport', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 })
-  await page.goto('/')
-  await page.getByRole('button', { name: 'Switch to horizontal layout' }).click()
-  const jellyfin = await page.getByRole('button', { name: 'Visit Jellyfin', exact: true }).boundingBox()
-  const navidrome = await page.getByRole('button', { name: 'Visit Navidrome', exact: true }).boundingBox()
-  expect(navidrome.x).toBeCloseTo(jellyfin.x, 0)
-  expect(navidrome.y).toBeGreaterThan(jellyfin.y)
-  const toggle = await page.getByRole('button', { name: 'Switch to vertical layout' }).boundingBox()
-  expect(toggle.x + toggle.width).toBeLessThanOrEqual(375)
-  expect(await page.locator('.chassis-app').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
-  await page.getByRole('button', { name: 'Enter edit mode' }).click()
-  const editToggle = await page.getByRole('button', { name: 'Switch to vertical layout' }).boundingBox()
-  expect(editToggle.x + editToggle.width).toBeLessThanOrEqual(375)
-  expect(await page.locator('.chassis-app').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
-})
+for (const layout of ['vertical', 'horizontal']) {
+  test(`hides the layout toggle on mobile and restores ${layout} when widened`, async ({ page }) => {
+    await page.goto('/')
+    if (layout === 'horizontal') {
+      await page.getByRole('button', { name: 'Switch to horizontal layout' }).click()
+    }
+    const toggle = page.locator('button[aria-label^="Switch to"]')
+    for (const width of [639, 375]) {
+      await page.setViewportSize({ width, height: 812 })
+      await expect(toggle).toBeHidden()
+      const first = await page.getByRole('button', { name: 'Visit Jellyfin', exact: true }).boundingBox()
+      const second = await page.getByRole('button', { name: 'Visit Navidrome', exact: true }).boundingBox()
+      expect(second.x).toBeCloseTo(first.x, 0)
+      expect(second.y).toBeGreaterThan(first.y)
+    }
+    await page.reload()
+    await expect(toggle).toBeHidden()
+    expect(await page.evaluate(() => localStorage.getItem('dashboard-layout'))).toBe(layout)
+    await page.getByRole('button', { name: 'Enter edit mode' }).click()
+    expect(await page.locator('.chassis-app').evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true)
+    await page.setViewportSize({ width: 640, height: 1000 })
+    await expect(toggle).toBeVisible()
+    const first = await page.getByRole('button', { name: 'Visit Jellyfin', exact: true }).boundingBox()
+    const second = await page.getByRole('button', { name: 'Visit Navidrome', exact: true }).boundingBox()
+    if (layout === 'horizontal') {
+      expect(second.y).toBeCloseTo(first.y, 0)
+      expect(second.x).toBeGreaterThan(first.x)
+    } else {
+      expect(second.x).toBeCloseTo(first.x, 0)
+      expect(second.y).toBeGreaterThan(first.y)
+    }
+  })
+}
 
 test('reorders services across a horizontal row and persists the order', async ({ page }) => {
+  const originalConfig = await (await page.request.get('/api/v1/export')).json()
+  try {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'Switch to horizontal layout' }).click()
+    await page.getByRole('button', { name: 'Enter edit mode' }).click()
+    const media = page.locator('.rack-section').filter({ has: page.locator('.rack-section__label').filter({ hasText: /^Media$/ }) })
+    const handle = page.getByRole('button', { name: 'Visit Jellyfin', exact: true }).locator('.drive-bay__logo')
+    const start = await handle.boundingBox()
+    const target = await page.getByRole('button', { name: 'Visit Navidrome', exact: true }).boundingBox()
+    await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 15 })
+    await page.mouse.up()
+    await expect(media.locator('.drive-bay__name').first()).toHaveText('Navidrome')
+    await expect.poll(async () => (await (await page.request.get('/api/v1/export')).json()).items.find((item) => item.name === 'Media').list.slice(0, 2).map((item) => item.name)).toEqual(['Navidrome', 'Jellyfin'])
+    await page.reload()
+    await expect(media.locator('.drive-bay__name').first()).toHaveText('Navidrome')
+    await expect(page.getByRole('button', { name: 'Switch to vertical layout' })).toBeVisible()
+  } finally {
+    const restored = await page.request.put('/api/v1/import', { data: originalConfig })
+    expect(restored.ok()).toBe(true)
+  }
+})
+
+
+for (const width of [640, 767]) {
+  test(`supports both layout directions at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 })
+    await page.goto('/')
+    const first = page.getByRole('button', { name: 'Visit Jellyfin', exact: true })
+    const second = page.getByRole('button', { name: 'Visit Navidrome', exact: true })
+    await expect(first).toBeVisible()
+    const verticalFirst = await first.boundingBox()
+    const verticalSecond = await second.boundingBox()
+    expect(verticalSecond.x).toBeCloseTo(verticalFirst.x, 0)
+    expect(verticalSecond.y).toBeGreaterThan(verticalFirst.y)
+
+    await page.getByRole('button', { name: 'Switch to horizontal layout' }).click()
+    const horizontalFirst = await first.boundingBox()
+    const horizontalSecond = await second.boundingBox()
+    expect(horizontalSecond.y).toBeCloseTo(horizontalFirst.y, 0)
+    expect(horizontalSecond.x).toBeGreaterThan(horizontalFirst.x)
+
+    await page.getByRole('button', { name: 'Switch to vertical layout' }).click()
+    const restoredFirst = await first.boundingBox()
+    const restoredSecond = await second.boundingBox()
+    expect(restoredSecond.x).toBeCloseTo(restoredFirst.x, 0)
+    expect(restoredSecond.y).toBeGreaterThan(restoredFirst.y)
+  })
+}
+
+
+test('keeps the header at the top when content scrolls', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 480 })
   await page.goto('/')
-  await page.getByRole('button', { name: 'Switch to horizontal layout' }).click()
-  await page.getByRole('button', { name: 'Enter edit mode' }).click()
-  const media = page.locator('.rack-section').filter({ has: page.locator('.rack-section__label').filter({ hasText: /^Media$/ }) })
-  const handle = page.getByRole('button', { name: 'Visit Jellyfin', exact: true }).locator('.drive-bay__logo')
-  const start = await handle.boundingBox()
-  const target = await page.getByRole('button', { name: 'Visit Navidrome', exact: true }).boundingBox()
-  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2)
-  await page.mouse.down()
-  await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 15 })
-  await page.mouse.up()
-  await expect(media.locator('.drive-bay__name').first()).toHaveText('Navidrome')
-  await page.reload()
-  await expect(media.locator('.drive-bay__name').first()).toHaveText('Navidrome')
-  await expect(page.getByRole('button', { name: 'Switch to vertical layout' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Config tools' })).toBeVisible()
+  await page.locator('.chassis-app').evaluate((element) => { element.scrollTop = 500 })
+  const header = await page.locator('.chassis-header').boundingBox()
+  expect(header.y).toBe(0)
+  await expect(page.getByRole('button', { name: 'Config tools' })).toBeVisible()
 })

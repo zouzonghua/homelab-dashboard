@@ -1,4 +1,4 @@
-# Homelab Dashboard
+# Homelab
 
 [![Docker Pulls](https://img.shields.io/docker/pulls/zouzonghua/homelab-dashboard)](https://hub.docker.com/r/zouzonghua/homelab-dashboard)
 [![GitHub release](https://img.shields.io/github/v/release/zouzonghua/homelab-dashboard)](https://github.com/zouzonghua/homelab-dashboard/releases)
@@ -6,221 +6,96 @@
 
 [English](README.md) | 简体中文
 
-一个现代化的家庭服务器仪表盘，帮助你更好地管理和监控你的家庭服务器。
-
-## 在线预览
-
-[https://homelab.zouzonghua.cn](https://homelab.zouzonghua.cn)
+一个紧凑的自托管服务导航面板，使用 React、Base UI、Go API 和 SQLite。
 
 ## 界面预览
 
-![Homelab Dashboard 暗色模式](assets/readme/dashboard-dark.png)
+Gruvbox 深色 · 纵向布局
 
-![Homelab Dashboard 浅色模式](assets/readme/dashboard-light.png)
+![Gruvbox 深色纵向布局](assets/readme/dashboard-dark.png)
 
-![Homelab Dashboard 横排布局](assets/readme/dashboard-horizontal.png)
+Gruvbox 浅色 · 纵向布局
 
-## 功能特点
+![Gruvbox 浅色纵向布局](assets/readme/dashboard-light.png)
 
-- [x] 🎯 一键访问常用服务
-- [x] 🌙 支持暗黑模式
-- [x] ↔️ 横排 / 竖排布局切换，浏览器自动记住选择
-- [x] 📱 响应式设计，支持移动端
-- [x] 📄 支持导入导出配置
-- [x] 🔧 支持编辑服务
-- [x] 🔄 实时服务状态显示
-- [x] 🐳 Docker 部署
-- [ ] 📊 系统资源监控 (TODO)
-- [ ] 🔐 安全的身份验证 (TODO)
+Gruvbox 深色 · 横向布局
 
-## 快速开始
+![Gruvbox 深色横向布局](assets/readme/dashboard-horizontal.png)
 
-确保你的系统已安装 Node.js、Go 和包管理器。
+## 功能
+
+- Gruvbox 深色、浅色和跟随系统主题；紧凑控件与固定工具栏。
+- 宽度达到 640px 时支持横向、纵向布局；手机保持单列，并记住用户原来的布局选择。
+- 编辑服务和分组、拖拽排序、JSON 导入导出、操作记录。
+- 支持键盘导航和操作。按 **`?`** 查看帮助，**`Esc`** 关闭弹窗，**`Ctrl/⌘ + Enter`** 保存表单。
+- 实时健康状态与自动获取服务图标。
+- 支持 PWA 安装、本地图标和独立窗口；通过 HTTPS 或 localhost 访问后，可从浏览器菜单安装。
+
+交互控件使用无样式的 [Base UI](https://base-ui.com/react/overview/quick-start)，配合基础 CSS。Dnd Kit 用于排序，Font Awesome 提供分组和工具栏图标。
+
+## 本地开发
+
+使用 Node.js 24、Go 1.26.10 或更高版本。
 
 ```bash
-# 克隆项目
 git clone https://github.com/zouzonghua/homelab-dashboard.git
-
-# 进入项目目录
 cd homelab-dashboard
-
-# 安装前端依赖
-npm --prefix web install
-
-# 启动前端开发服务器
-npm --prefix web run dev
-
-# 另开一个终端启动本地 Go API
-npm --prefix web run dev:api
-
-# 启动 Go API + React 构建产物
-npm --prefix web run e2e:server
-
-# 构建生产版本
-npm --prefix web run build
-
-# 预览生产构建
-npm --prefix web run preview
-```
-
-## 后端与数据持久化
-
-项目现在提供 Go API 和 SQLite 持久化：
-
-- OpenAPI v1 契约：`api/openapi.yaml`
-- 资源化 API v1：`/api/v1/dashboard`、`/api/v1/categories`、`/api/v1/services`、`/api/v1/status`
-- 配置导入导出 API：`GET /api/v1/export`、`PUT /api/v1/import`
-- 默认数据库路径：`data/homelab.db`
-- 默认 seed：后端内置 `internal/config/default-dashboard.json`
-- 默认静态资源目录：`web/dist`
-- 默认端口：`8080`
-
-可通过环境变量覆盖：
-
-```bash
-HOMELAB_DB_PATH=.tmp/homelab.db HOMELAB_STATIC_DIR=web/dist PORT=8080 go run ./cmd/server
-```
-
-首次启动时，如果 SQLite 为空，会从后端内置 seed 初始化 dashboard/categories/services。需要覆盖默认 seed 时，设置 `HOMELAB_SEED_PATH=/path/to/dashboard.json`。
-
-本地开发不需要 Docker。常规调试方式是两个终端：
-
-```bash
-# 推荐：一个命令同时启动 Go API 和 Vite 前端
+npm ci --prefix web
 make dev
 ```
 
-也可以拆成两个终端：
+打开 `http://localhost:5173`。Vite 会将 `/api` 请求代理到 `http://127.0.0.1:8080` 的 Go 服务。
 
-```bash
-# 终端 1：Go API，监听 8080
-go run ./cmd/server
-
-# 终端 2：Vite 前端，监听 5173，并把 /api 代理到 8080
-npm --prefix web run dev
-```
-
-访问 `http://localhost:5173`。Docker 主要用于发布打包或验证容器部署。
-
-## 安装部署
-
-### 手动部署
-
-1. 构建项目
+本地运行生产构建：
 
 ```bash
 npm --prefix web run build
+go run ./cmd/server
 ```
 
-2. 将 `web/dist` 目录下的文件部署到你的 Web 服务器
+打开 `http://localhost:8080`。
 
-### Docker 部署
+## Docker
 
 ```bash
-# 使用已发布镜像
-docker run -d \
-  --name homelab-dashboard \
-  -p 8080:8080 \
-  -v "$(pwd)/data:/data" \
-  --restart unless-stopped \
-  zouzonghua/homelab-dashboard:latest
+docker compose -f deploy/compose.yml up -d --build
 ```
 
-也可以使用 compose：
+通过 `8080` 端口访问。Compose 将 SQLite 数据库和图标缓存持久化到仓库的 `data/` 目录。已发布镜像为 `zouzonghua/homelab-dashboard:latest`。
+
+应用没有内置用户账号。多人或公网访问时，应通过 Authentik 等认证反向代理保护入口。
+
+## 数据与配置
+
+默认 JSON 位于 [`internal/config/default-dashboard.json`](internal/config/default-dashboard.json)，基于 2026-10-26 的 Authentik 快照整理，包含 **7 个分组、32 个入口**。分组顺序由数组决定，已移除编号和面板自身的快捷方式。
+
+空数据库首次使用时导入默认 JSON；修改默认文件**不会覆盖已有数据库**。需要替换已保存的数据时，先导出备份，再通过 **Config tools → Import config** 导入。后续 Authentik 变更不会自动同步。
+
+| 环境变量 | 默认值 |
+| --- | --- |
+| `PORT` | `8080` |
+| `HOMELAB_DB_PATH` | `data/homelab.db` |
+| `HOMELAB_STATIC_DIR` | `web/dist` |
+| `HOMELAB_SEED_PATH` | 内嵌默认 JSON；可指定其他文件路径 |
+
+API 文档入口为 `/api/docs`，契约位于 [`api/openapi.yaml`](api/openapi.yaml)，资源接口使用 `/api/v1/`。
+
+## 验证与贡献
 
 ```bash
-docker compose -f deploy/compose.yml up -d
-```
-
-本地验证镜像构建：
-
-```bash
-docker compose -f deploy/compose.yml up --build
-```
-
-访问 `http://localhost:8080`，SQLite 数据会保存在本地 `data/homelab.db` 中，自动获取的 favicon 缓存在 `data/icons/`，方便用 DBeaver 等工具查看。
-
-### Docker 镜像发布
-
-GitHub Actions 会在以下场景发布镜像到 Docker Hub：
-
-- 推送到 `main`：发布 `zouzonghua/homelab-dashboard:latest`
-- 推送 `v*.*.*` 标签或发布 GitHub Release：发布 `1.2.3`、`v1.2.3`、`1.2` 等版本标签
-- 手动触发 `Publish Docker image` workflow
-
-发布流程会构建 `linux/amd64` 和 `linux/arm64` 双架构镜像，并在 GitHub Actions summary 中输出镜像 digest 和 tag 列表。测试与类型检查由 CI workflow 负责，Docker 发布 workflow 只负责构建和推送镜像。
-
-仓库需要配置 Secrets：
-
-- `DOCKER_HUB_USERNAME`
-- `DOCKER_HUB_ACCESS_TOKEN`
-
-## 测试
-
-```bash
-# OpenAPI YAML 解析校验
-ruby -e "require 'yaml'; YAML.load_file('api/openapi.yaml')"
-
-# Go 单元/集成测试
-go test ./cmd/... ./internal/...
-
-# 前端单元测试
+npm --prefix web run api:types:check
 npm --prefix web test
-
-# E2E 测试
+npm --prefix web run typecheck
+npm --prefix web run build
 npm --prefix web run test:e2e
+go test ./api ./cmd/... ./internal/...
+npm --prefix web audit
 ```
 
-## 配置说明
+E2E 测试使用独立数据库和固定样例，不会修改本地面板数据。
 
-配置持久化在 SQLite 中。你可以通过 `GET /api/v1/export` 导出兼容旧格式的 JSON，通过 `PUT /api/v1/import` 导入并替换当前 SQLite 配置：
+开发采用 [main-only + GitHub Flow](CONTRIBUTING.md)：从 `main` 创建短期分支，PR 直接合入 `main`，CI 通过后 Squash。合入 `main` 会发布 Docker 镜像，版本标签会额外发布对应版本镜像。
 
-```javascript
-{
-  "title": "zonghua's homelab dashboard", // 标题
-  "columns": "4", // 列数
-  "items": [
-    // 你的服务配置
-    {
-      "name": "Media", // 服务名称
-      "icon": "fa-solid fa-photo-film", // 图标
-      "list": [
-        {
-          "name": "Jellyfin", // 服务名称
-          "logo": "", // 留空自动获取 favicon，也可填写网络图标 URL
-          "url": "http://192.168.1.203:8096", // 链接
-          "target": "_blank" // 打开方式
-        }
-      ]
-    },
-  ]
-}
-```
+## 许可证
 
-## 技术栈
-
-- 🚀 [Vite](https://vitejs.dev/) - 下一代前端构建工具
-- ⚛️ [React 18](https://reactjs.org/) - 用户界面构建库
-- 🎨 [TailwindCSS](https://tailwindcss.com/) - 实用优先的 CSS 框架
-- 🔍 [ESLint](https://eslint.org/) - 代码质量检查工具
-- 🎯 [PostCSS](https://postcss.org/) - CSS 转换工具
-- 📦 [Autoprefixer](https://github.com/postcss/autoprefixer) - 自动添加 CSS 前缀
-- 🎁 [Font Awesome](https://fontawesome.com/) - 图标库
-
-## 贡献指南
-
-欢迎提交 Pull Request 或创建 Issue！
-
-1. Fork 本仓库
-2. 创建你的特性分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交你的更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建一个 Pull Request
-
-## 开源协议
-
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/zouzonghua/homelab-dashboard/blob/main/LICENSE)
-
-Copyright (c) 2021 - Now zouzonghua
-
-开发流程采用 [main-only + GitHub Flow](CONTRIBUTING.md)。
+[MIT](LICENSE) © zouzonghua

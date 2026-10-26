@@ -29,7 +29,6 @@ import type {
 type SortableCategoryItemProps = {
   category: CategoryWithServices
   index: number
-  columnClass: string
   layout: DashboardLayout
   onOpenEditService?: BivariantCallback<[string, ServiceViewModel, number]>
   onOpenAddService?: BivariantCallback<[string]>
@@ -57,7 +56,7 @@ type ServiceGridProps = {
 }
 
 // Sortable category item.
-const SortableCategoryItem = ({ category, index, columnClass, layout, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }: SortableCategoryItemProps) => {
+const SortableCategoryItem = ({ category, index, layout, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }: SortableCategoryItemProps) => {
   const {
     attributes,
     listeners,
@@ -79,7 +78,7 @@ const SortableCategoryItem = ({ category, index, columnClass, layout, onOpenEdit
     <li
       ref={setNodeRef}
       style={style}
-      className={`flex flex-col ${columnClass}`}
+      className="category-tile"
     >
       <ServiceCategory
         category={category}
@@ -117,19 +116,6 @@ const ServiceGrid = ({ categories, columns, layout = 'vertical', onOpenEditServi
   const parsedColumns = parseInt(String(columns))
   const columnCount = parsedColumns >= 1 && parsedColumns <= 6 ? parsedColumns : 4
 
-  // Calculate the width class for each card.
-  const getColumnClass = () => {
-    switch (columnCount) {
-      case 1: return 'w-full'
-      case 2: return 'w-full md:w-1/2'
-      case 3: return 'w-full md:w-1/3'
-      case 4: return 'w-full md:w-1/4'
-      case 5: return 'w-full md:w-1/5'
-      case 6: return 'w-full md:w-1/6'
-      default: return 'w-full md:w-1/4'
-    }
-  }
-
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
@@ -144,7 +130,7 @@ const ServiceGrid = ({ categories, columns, layout = 'vertical', onOpenEditServi
 
   return (
     <div
-      className={`chassis-rack container max-w-screen-xl p-2 xl:p-0 xl:mt-4${layout === 'horizontal' ? ' chassis-rack--horizontal' : ''}`}
+      className={`chassis-rack${layout === 'horizontal' ? ' chassis-rack--horizontal' : ''}`}
       style={{ '--dashboard-columns': columnCount } as CSSProperties}
       data-layout={layout}
     >
@@ -157,13 +143,12 @@ const ServiceGrid = ({ categories, columns, layout = 'vertical', onOpenEditServi
           items={categories.map((cat) => cat.name)}
           strategy={rectSortingStrategy}
         >
-          <ul className="flex flex-wrap p-2">
+          <ul className="category-grid">
             {categories.map((category, index) => (
               <SortableCategoryItem
                 key={category.name}
                 category={category}
                 index={index}
-                columnClass={layout === 'horizontal' ? 'w-full' : getColumnClass()}
                 layout={layout}
                 onOpenEditService={onOpenEditService}
                 onOpenAddService={onOpenAddService}

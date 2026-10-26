@@ -2,11 +2,12 @@ FROM --platform=$BUILDPLATFORM node:24-alpine AS web-build
 WORKDIR /app
 COPY web/package*.json ./
 RUN --mount=type=cache,target=/root/.npm npm ci
-COPY web/index.html web/postcss.config.js web/tailwind.config.js web/tsconfig*.json web/vite.config.ts ./
+COPY web/index.html web/tsconfig*.json web/vite.config.ts ./
 COPY web/src ./src
+COPY web/public ./public
 RUN npm run build
 
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS api-build
+FROM --platform=$BUILDPLATFORM golang:1.26.10-alpine AS api-build
 ARG TARGETOS=linux
 ARG TARGETARCH=amd64
 WORKDIR /app
