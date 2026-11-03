@@ -1,23 +1,12 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { getCategoryIcon } from './category-icons'
 import type { CSSProperties } from 'react'
 import type { DashboardLayout } from '../model/use-dashboard-layout'
 import ServiceCategory from './ServiceCategory'
-import {
-  DndContext,
-  closestCenter,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  rectSortingStrategy,
-} from '@dnd-kit/sortable'
-import { useSortable } from '@dnd-kit/sortable'
+import { DndContext, DragOverlay } from '@dnd-kit/core'
+import { SortableContext, rectSortingStrategy, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import { createPortal } from 'react-dom'
+import { sortableCollision, stationarySorting, useSortableList } from './use-sortable-list'
 import { CSS } from '@dnd-kit/utilities'
 import type {
   BivariantCallback,
@@ -29,13 +18,15 @@ import type {
 type SortableCategoryItemProps = {
   category: CategoryWithServices
   index: number
+  sortableId: string | number
+  activeIndex: number
   layout: DashboardLayout
-  onOpenEditService?: BivariantCallback<[string, ServiceViewModel, number]>
-  onOpenAddService?: BivariantCallback<[string]>
-  onDeleteService?: BivariantCallback<[string, number]>
-  onDeleteCategory?: BivariantCallback<[string]>
-  onOpenEditCategory?: BivariantCallback<[CategoryWithServices, number]>
-  onReorderServices?: BivariantCallback<[string, ServiceViewModel[]]>
+  onOpenEditService?: BivariantCallback<[ServiceViewModel]>
+  onOpenAddService?: BivariantCallback<[number]>
+  onDeleteService?: BivariantCallback<[number]>
+  onDeleteCategory?: BivariantCallback<[number]>
+  onOpenEditCategory?: BivariantCallback<[CategoryWithServices]>
+  onReorderServices?: BivariantCallback<[number, ServiceViewModel[]]>
   isEditMode?: boolean
   serviceStatus?: ServiceStatusMap
 }
@@ -44,57 +35,65 @@ type ServiceGridProps = {
   categories: CategoryWithServices[]
   columns?: string | number
   layout?: DashboardLayout
-  onOpenEditService?: BivariantCallback<[string, ServiceViewModel, number]>
-  onOpenAddService?: BivariantCallback<[string]>
-  onDeleteService?: BivariantCallback<[string, number]>
-  onDeleteCategory?: BivariantCallback<[string]>
-  onOpenEditCategory?: BivariantCallback<[CategoryWithServices, number]>
+  onOpenEditService?: BivariantCallback<[ServiceViewModel]>
+  onOpenAddService?: BivariantCallback<[number]>
+  onDeleteService?: BivariantCallback<[number]>
+  onDeleteCategory?: BivariantCallback<[number]>
+  onOpenEditCategory?: BivariantCallback<[CategoryWithServices]>
   onReorderCategories?: BivariantCallback<[CategoryWithServices[]]>
-  onReorderServices?: BivariantCallback<[string, ServiceViewModel[]]>
+  onReorderServices?: BivariantCallback<[number, ServiceViewModel[]]>
   isEditMode?: boolean
   serviceStatus?: ServiceStatusMap
 }
 
 // Sortable category item.
-const SortableCategoryItem = ({ category, index, layout, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }: SortableCategoryItemProps) => {
+const SortableCategoryItem = ({ category, index, sortableId, activeIndex, layout, onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderServices, isEditMode, serviceStatus }: SortableCategoryItemProps) => {
   const {
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
+    isOver,
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: category.name, disabled: !isEditMode })
+  } = useSortable({ id: sortableId, disabled: !isEditMode || category.id == null })
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 200ms ease',
+    transform: CSS.Translate.toString(transform),
+    transition,
     opacity: isDragging ? 0.4 : 1,
-    zIndex: isDragging ? 1000 : 'auto',
-    cursor: isDragging ? 'grabbing' : 'default',
   }
 
   return (
     <li
       ref={setNodeRef}
-      style={style}
+      style={style} data-drop-target={isOver && !isDragging ? true : undefined}
+      data-insertion={layout === 'masonry' && isOver && !isDragging && activeIndex >= 0
+        ? index < activeIndex ? 'before' : 'after'
+        : undefined}
       className="category-tile"
     >
       <ServiceCategory
         category={category}
         layout={layout}
-        onOpenEditService={(service, serviceIndex) =>
-          onOpenEditService?.(category.name, service, serviceIndex)
-        }
-        onOpenAddService={() => onOpenAddService?.(category.name)}
-        onDeleteService={(serviceIndex) =>
-          onDeleteService?.(category.name, serviceIndex)
-        }
-        onDeleteCategory={() => onDeleteCategory?.(category.name)}
-        onEditCategory={() => onOpenEditCategory?.(category, index)}
-        onReorderServices={(newServices) => onReorderServices?.(category.name, newServices)}
+        onOpenEditService={onOpenEditService}
+        onOpenAddService={() => {
+          if (category.id != null) onOpenAddService?.(category.id)
+        }}
+        onDeleteService={(serviceIndex) => {
+          const serviceId = category.list[serviceIndex]?.id
+          if (serviceId != null) onDeleteService?.(serviceId)
+        }}
+        onDeleteCategory={() => {
+          if (category.id != null) onDeleteCategory?.(category.id)
+        }}
+        onEditCategory={() => onOpenEditCategory?.(category)}
+        onReorderServices={(newServices) => {
+          if (category.id != null) onReorderServices?.(category.id, newServices)
+        }}
         isEditMode={isEditMode}
-        dragHandleProps={isEditMode ? { ...attributes, ...listeners } : {}}
+        dragHandleProps={isEditMode ? { ...attributes, ...listeners, ref: setActivatorNodeRef } : {}}
         serviceStatus={serviceStatus}
       />
     </li>
@@ -102,31 +101,10 @@ const SortableCategoryItem = ({ category, index, layout, onOpenEditService, onOp
 }
 
 const ServiceGrid = ({ categories, columns, layout = 'vertical', onOpenEditService, onOpenAddService, onDeleteService, onDeleteCategory, onOpenEditCategory, onReorderCategories, onReorderServices, isEditMode, serviceStatus }: ServiceGridProps) => {
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Activation distance to avoid accidental drags.
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
-
+  const ids = categories.map((category, index) => category.id ?? `pending-${index}`)
+  const { activeItem, keyboard, ...drag } = useSortableList(categories, ids, onReorderCategories)
   const parsedColumns = parseInt(String(columns))
   const columnCount = parsedColumns >= 1 && parsedColumns <= 6 ? parsedColumns : 4
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (over && active.id !== over.id) {
-      const oldIndex = categories.findIndex((cat) => cat.name === active.id)
-      const newIndex = categories.findIndex((cat) => cat.name === over.id)
-
-      const newCategories = arrayMove(categories, oldIndex, newIndex)
-      onReorderCategories?.(newCategories)
-    }
-  }
 
   return (
     <div
@@ -135,20 +113,21 @@ const ServiceGrid = ({ categories, columns, layout = 'vertical', onOpenEditServi
       data-layout={layout}
     >
       <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
+        {...drag}
+        collisionDetection={sortableCollision}
       >
         <SortableContext
-          items={categories.map((cat) => cat.name)}
-          strategy={rectSortingStrategy}
+          items={ids}
+          strategy={layout === 'masonry' || (activeItem && !keyboard) ? stationarySorting : layout === 'horizontal' ? verticalListSortingStrategy : rectSortingStrategy}
         >
           <ul className="category-grid">
             {categories.map((category, index) => (
               <SortableCategoryItem
-                key={category.name}
+                key={ids[index]}
+                sortableId={ids[index]}
                 category={category}
                 index={index}
+                activeIndex={activeItem ? categories.indexOf(activeItem) : -1}
                 layout={layout}
                 onOpenEditService={onOpenEditService}
                 onOpenAddService={onOpenAddService}
@@ -162,6 +141,12 @@ const ServiceGrid = ({ categories, columns, layout = 'vertical', onOpenEditServi
             ))}
           </ul>
         </SortableContext>
+        {isEditMode && createPortal(
+          <DragOverlay dropAnimation={null}>
+            {activeItem && <div className="sort-preview" aria-hidden="true"><FontAwesomeIcon icon={getCategoryIcon(activeItem.icon)} /> {activeItem.name}</div>}
+          </DragOverlay>,
+          document.body,
+        )}
       </DndContext>
     </div>
   )

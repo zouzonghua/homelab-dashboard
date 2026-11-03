@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 
-export type DashboardLayout = 'vertical' | 'horizontal'
+export type DashboardLayout = 'vertical' | 'horizontal' | 'masonry'
+
+export const nextLayout = { vertical: 'horizontal', horizontal: 'masonry', masonry: 'vertical' } as const
 
 export function useDashboardLayout() {
   const [layout, setLayout] = useState<DashboardLayout>(() => {
     try {
-      return localStorage.getItem('dashboard-layout') === 'horizontal' ? 'horizontal' : 'vertical'
+      const saved = localStorage.getItem('dashboard-layout')
+      return saved === 'horizontal' || saved === 'masonry' ? saved : 'vertical'
     } catch {
       return 'vertical'
     }
@@ -20,7 +23,7 @@ export function useDashboardLayout() {
   }, [layout])
 
   const toggleLayout = () => {
-    setLayout((current) => current === 'vertical' ? 'horizontal' : 'vertical')
+    setLayout((current) => nextLayout[current])
   }
 
   return { layout, toggleLayout }

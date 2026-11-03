@@ -73,6 +73,33 @@ func NewServer(st *store.Store, staticDir string) http.Handler {
 		}
 		listAuditLogs(w, r, st)
 	})
+	mux.HandleFunc("/api/v1/order", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method not allowed", nil)
+			return
+		}
+		var order struct {
+			CategoryID *int64  `json:"categoryId"`
+			IDs        []int64 `json:"ids"`
+		}
+		if !decodeRequest(w, r, &order) {
+			return
+		}
+		err := st.SaveOrder(r.Context(), order.CategoryID, order.IDs)
+		if errors.Is(err, store.ErrInvalidOrder) {
+			writeError(w, http.StatusConflict, "invalid_order", "order must contain each current resource exactly once", nil)
+			return
+		}
+		if err != nil {
+			writeStoreError(w, err)
+			return
+		}
+		writeAuditLog(r, st, config.AuditLogCreate{
+			Action: "dashboard.reorder", ResourceType: "dashboard",
+			Summary: "Updated dashboard order", AfterJSON: mustJSON(order),
+		})
+		w.WriteHeader(http.StatusNoContent)
+	})
 	mux.HandleFunc("/api/v1/categories", func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:

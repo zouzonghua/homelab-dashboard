@@ -94,20 +94,10 @@ func (s *Store) CreateCategory(ctx context.Context, category config.CategoryReso
 }
 
 func (s *Store) UpdateCategory(ctx context.Context, id int64, patch config.CategoryResourcePatch) (config.CategoryResource, error) {
-	category, err := s.GetCategory(ctx, id)
-	if err != nil {
-		return config.CategoryResource{}, err
-	}
-	if patch.Name != nil {
-		category.Name = *patch.Name
-	}
-	if patch.Icon != nil {
-		category.Icon = *patch.Icon
-	}
-	if patch.Order != nil {
-		category.Order = *patch.Order
-	}
-	if _, err := s.db.ExecContext(ctx, `UPDATE categories SET name = ?, icon = ?, order_idx = ? WHERE id = ?`, category.Name, category.Icon, category.Order, id); err != nil {
+	if _, err := s.db.ExecContext(ctx,
+		`UPDATE categories SET name = COALESCE(?, name), icon = COALESCE(?, icon), order_idx = COALESCE(?, order_idx) WHERE id = ?`,
+		patch.Name, patch.Icon, patch.Order, id,
+	); err != nil {
 		return config.CategoryResource{}, err
 	}
 	return s.GetCategory(ctx, id)
@@ -182,49 +172,18 @@ func (s *Store) CreateService(ctx context.Context, service config.ServiceResourc
 }
 
 func (s *Store) UpdateService(ctx context.Context, id int64, patch config.ServiceResourcePatch) (config.ServiceResource, error) {
-	service, err := s.GetService(ctx, id)
-	if err != nil {
-		return config.ServiceResource{}, err
-	}
 	if patch.CategoryID != nil {
 		if _, err := s.GetCategory(ctx, *patch.CategoryID); err != nil {
 			return config.ServiceResource{}, err
 		}
-		service.CategoryID = *patch.CategoryID
 	}
-	if patch.Order != nil {
-		service.Order = *patch.Order
-	}
-	if patch.Name != nil {
-		service.Name = *patch.Name
-	}
-	if patch.Logo != nil {
-		service.Logo = *patch.Logo
-	}
-	if patch.URL != nil {
-		service.URL = *patch.URL
-	}
-	if patch.Target != nil {
-		service.Target = *patch.Target
-	}
-	if patch.MonitorURL != nil {
-		service.MonitorURL = *patch.MonitorURL
-	}
-	if patch.MonitorEnabled != nil {
-		service.MonitorEnabled = *patch.MonitorEnabled
-	}
-	_, err = s.db.ExecContext(
-		ctx,
-		`UPDATE services SET category_id = ?, order_idx = ?, name = ?, logo = ?, url = ?, target = ?, monitor_url = ?, monitor_enabled = ? WHERE id = ?`,
-		service.CategoryID,
-		service.Order,
-		service.Name,
-		service.Logo,
-		service.URL,
-		service.Target,
-		service.MonitorURL,
-		service.MonitorEnabled,
-		id,
+	_, err := s.db.ExecContext(ctx, `UPDATE services SET
+		category_id = COALESCE(?, category_id), order_idx = COALESCE(?, order_idx),
+		name = COALESCE(?, name), logo = COALESCE(?, logo), url = COALESCE(?, url),
+		target = COALESCE(?, target), monitor_url = COALESCE(?, monitor_url),
+		monitor_enabled = COALESCE(?, monitor_enabled) WHERE id = ?`,
+		patch.CategoryID, patch.Order, patch.Name, patch.Logo, patch.URL,
+		patch.Target, patch.MonitorURL, patch.MonitorEnabled, id,
 	)
 	if err != nil {
 		return config.ServiceResource{}, err
@@ -293,4 +252,55 @@ func requireAffected(result sql.Result) error {
 		return ErrNotFound
 	}
 	return nil
+}
+
+var ErrInvalidOrder = errors.New("invalid resource order")
+
+// SaveOrder replaces the order of all categories or all services in one category.
+func (s *Store) SaveOrder(ctx context.Context, categoryID *int64, ids []int64) error {
+	if len(ids) == 0 {
+		return ErrInvalidOrder
+	}
+	if err := s.ensureSeed(ctx); err != nil {
+		return err
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	countSQL := "SELECT COUNT(*) FROM categories"
+	updateSQL := "UPDATE categories SET order_idx = ? WHERE id = ?"
+	var scope []any
+	if categoryID != nil {
+		countSQL = "SELECT COUNT(*) FROM services WHERE category_id = ?"
+		updateSQL = "UPDATE services SET order_idx = ? WHERE id = ? AND category_id = ?"
+		scope = []any{*categoryID}
+	}
+	var count int
+	if err := tx.QueryRowContext(ctx, countSQL, scope...).Scan(&count); err != nil {
+		return err
+	}
+	if count != len(ids) {
+		return ErrInvalidOrder
+	}
+
+	seen := make(map[int64]bool, len(ids))
+	for index, id := range ids {
+		if seen[id] {
+			return ErrInvalidOrder
+		}
+		seen[id] = true
+		result, err := tx.ExecContext(ctx, updateSQL, append([]any{index, id}, scope...)...)
+		if err != nil {
+			return err
+		}
+		if err := requireAffected(result); errors.Is(err, ErrNotFound) {
+			return ErrInvalidOrder
+		} else if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }

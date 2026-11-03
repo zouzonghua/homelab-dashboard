@@ -8,23 +8,10 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { getCategoryIcon } from './category-icons'
 
-import {
-  DndContext,
-  closestCenter,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-  rectSortingStrategy,
-  useSortable,
-} from '@dnd-kit/sortable'
+import { DndContext, DragOverlay } from '@dnd-kit/core'
+import { SortableContext, rectSortingStrategy, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import { createPortal } from 'react-dom'
+import { sortableCollision, stationarySorting, useSortableList } from './use-sortable-list'
 import { CSS } from '@dnd-kit/utilities'
 import type {
   CategoryWithServices,
@@ -65,27 +52,27 @@ const SortableServiceItem = ({ service, index, onOpenEdit, onDelete, isEditMode,
     attributes,
     listeners,
     setNodeRef,
+    setActivatorNodeRef,
+    isOver,
     transform,
     transition,
     isDragging,
   } = useSortable({ id: getServiceSortableId(service, index), disabled: !isEditMode })
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 200ms ease',
+    transform: CSS.Translate.toString(transform),
+    transition,
     opacity: isDragging ? 0.4 : 1,
-    zIndex: isDragging ? 1000 : 'auto',
-    cursor: isDragging ? 'grabbing' : 'default',
   }
 
   return (
-    <li ref={setNodeRef} style={style} data-service-index={index}>
+    <li ref={setNodeRef} style={style} data-drop-target={isOver && !isDragging ? true : undefined} data-service-index={index}>
       <ServiceItem
         service={service}
         onOpenEdit={onOpenEdit}
         onDelete={onDelete}
         isEditMode={isEditMode}
-        dragHandleProps={isEditMode ? { ...attributes, ...listeners } : {}}
+        dragHandleProps={isEditMode ? { ...attributes, ...listeners, ref: setActivatorNodeRef } : {}}
         status={status}
       />
     </li>
@@ -105,38 +92,17 @@ const ServiceCategory = ({
   dragHandleProps,
   serviceStatus = {},
 }: ServiceCategoryProps) => {
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // Activation distance to avoid accidental drags.
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  )
+  const ids = category.list.map(getServiceSortableId)
+  const { activeItem, keyboard, ...drag } = useSortableList(category.list, ids, onReorderServices)
 
-  const handleDeleteService = (index: number) => onDeleteService?.(index)
-  const handleDeleteCategory = () => onDeleteCategory?.()
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (over && active.id !== over.id) {
-      const oldIndex = category.list.findIndex((service, idx) => active.id === getServiceSortableId(service, idx))
-      const newIndex = category.list.findIndex((service, idx) => over.id === getServiceSortableId(service, idx))
-
-      const newServices = arrayMove(category.list, oldIndex, newIndex)
-      onReorderServices?.(newServices)
-    }
-  };
+  const dragByTitle = isEditMode && layout === 'masonry'
 
   return (
-    <div className="rack-section" data-category-name={category.name}>
+    <div className="rack-section" data-category-name={category.name} data-category-id={category.id}>
       <h2 tabIndex={0} className="rack-section__header">
-        <span className="rack-section__label">
+        <span {...(dragByTitle ? dragHandleProps : {})} title={dragByTitle ? "Drag to reorder" : undefined} className="rack-section__label">
           {/* Category icon doubles as the drag handle in edit mode. */}
-          {isEditMode
+          {isEditMode && !dragByTitle
             ? <Button nativeButton={false} render={<span />} {...dragHandleProps} className="rack-section__icon" title="Drag to reorder"><FontAwesomeIcon icon={getCategoryIcon(category.icon)} /></Button>
             : <span className="rack-section__icon"><FontAwesomeIcon icon={getCategoryIcon(category.icon)} /></span>}
           {category.name}
@@ -154,13 +120,12 @@ const ServiceCategory = ({
         )}
       </h2>
       <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
+        {...drag}
+        collisionDetection={sortableCollision}
       >
         <SortableContext
-          items={category.list.map((service, idx) => getServiceSortableId(service, idx))}
-          strategy={layout === 'horizontal' ? rectSortingStrategy : verticalListSortingStrategy}
+          items={ids}
+          strategy={activeItem && !keyboard ? stationarySorting : layout === 'horizontal' ? rectSortingStrategy : verticalListSortingStrategy}
         >
           <ul className="rack-section__services">
             {category.list.map((service, index) => (
@@ -169,7 +134,7 @@ const ServiceCategory = ({
                 service={service}
                 index={index}
                 onOpenEdit={() => onOpenEditService?.(service, index)}
-                onDelete={() => handleDeleteService(index)}
+                onDelete={() => onDeleteService?.(index)}
                 isEditMode={isEditMode}
                 status={getServiceStatus(serviceStatus, service) as ServiceStatus | undefined}
               />
@@ -189,6 +154,12 @@ const ServiceCategory = ({
             )}
           </ul>
         </SortableContext>
+        {isEditMode && createPortal(
+          <DragOverlay dropAnimation={null}>
+            {activeItem && <div className="sort-preview" aria-hidden="true">{activeItem.name}</div>}
+          </DragOverlay>,
+          document.body,
+        )}
       </DndContext>
     </div>
   )

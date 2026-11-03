@@ -4,6 +4,14 @@ export type ClientOptions = {
     baseUrl: 'http://localhost:8080' | (string & {});
 };
 
+export type DashboardOrderRequest = {
+    /**
+     * Omit to reorder categories.
+     */
+    categoryId?: number;
+    ids: Array<number>;
+};
+
 export type ImportConfigRequest = {
     /**
      * Optional seed/export date string.
@@ -221,6 +229,35 @@ export type OffsetParam = number;
  * Service identifier.
  */
 export type ServiceId = number;
+
+export type SaveOrderData = {
+    body: DashboardOrderRequest;
+    path?: never;
+    query?: never;
+    url: '/api/v1/order';
+};
+
+export type SaveOrderErrors = {
+    /**
+     * IDs do not match the current resources
+     */
+    409: unknown;
+    /**
+     * Unexpected server error
+     */
+    500: ApiError;
+};
+
+export type SaveOrderError = SaveOrderErrors[keyof SaveOrderErrors];
+
+export type SaveOrderResponses = {
+    /**
+     * Order saved
+     */
+    204: void;
+};
+
+export type SaveOrderResponse = SaveOrderResponses[keyof SaveOrderResponses];
 
 export type GetDashboardData = {
     body?: never;
