@@ -97,7 +97,7 @@ test('supports keyboard item editing without firing shortcuts while typing', asy
   await expect(group).toHaveCount(0)
 })
 
-test('navigates and reorders groups and services with the keyboard', async ({ page }) => {
+test('navigates groups and services without the removed sort shortcut', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('button', { name: 'Keyboard shortcuts (?)' })).toBeVisible()
   await page.keyboard.press('Home')
@@ -108,18 +108,11 @@ test('navigates and reorders groups and services with the keyboard', async ({ pa
   await expect(jellyfin).toBeFocused()
   await page.keyboard.press('e')
   await page.keyboard.press('Alt+ArrowDown')
-  await expect(media.locator('.drive-bay__name').first()).toHaveText('Navidrome')
-  await expect.poll(async () => (await (await page.request.get('/api/v1/export')).json()).items.find((item) => item.name === 'Media').list.slice(0, 2).map((item) => item.name)).toEqual(['Navidrome', 'Jellyfin'])
-  await expect(jellyfin).toBeFocused()
-  await page.keyboard.press('Alt+ArrowUp')
   await expect(media.locator('.drive-bay__name').first()).toHaveText('Jellyfin')
-  await expect.poll(async () => (await (await page.request.get('/api/v1/export')).json()).items.find((item) => item.name === 'Media').list.slice(0, 2).map((item) => item.name)).toEqual(['Jellyfin', 'Navidrome'])
+  await expect(jellyfin).toBeFocused()
   await media.locator('h2').focus()
   await page.keyboard.press('Alt+ArrowDown')
-  await expect(page.locator('.rack-section').first()).toHaveAttribute('data-category-name', 'Services')
-  await expect.poll(async () => (await (await page.request.get('/api/v1/export')).json()).items[0].name).toBe('Services')
-  await page.reload()
-  await expect(page.locator('.rack-section').first()).toHaveAttribute('data-category-name', 'Services')
+  await expect(page.locator('.rack-section').first()).toHaveAttribute('data-category-name', 'Media')
 })
 
 

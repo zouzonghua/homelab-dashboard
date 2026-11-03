@@ -24,10 +24,21 @@ type Service struct {
 	MonitorEnabled bool   `json:"monitorEnabled,omitempty"`
 }
 
+type MasonryPlacement struct {
+	IDs   []int64 `json:"ids"`
+	Sizes []int   `json:"sizes"`
+}
+
+type MasonryOrder struct {
+	Capacity int   `json:"capacity"`
+	Sizes    []int `json:"sizes"`
+}
+
 type Dashboard struct {
-	Date    string `json:"date"`
-	Title   string `json:"title"`
-	Columns int    `json:"columns"`
+	MasonryPlacements map[int]MasonryPlacement `json:"masonryPlacements,omitempty"`
+	Date              string                   `json:"date"`
+	Title             string                   `json:"title"`
+	Columns           int                      `json:"columns"`
 }
 
 type CategoryResource struct {

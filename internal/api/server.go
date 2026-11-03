@@ -79,13 +79,14 @@ func NewServer(st *store.Store, staticDir string) http.Handler {
 			return
 		}
 		var order struct {
-			CategoryID *int64  `json:"categoryId"`
-			IDs        []int64 `json:"ids"`
+			CategoryID *int64               `json:"categoryId"`
+			IDs        []int64              `json:"ids"`
+			Masonry    *config.MasonryOrder `json:"masonry,omitempty"`
 		}
 		if !decodeRequest(w, r, &order) {
 			return
 		}
-		err := st.SaveOrder(r.Context(), order.CategoryID, order.IDs)
+		err := st.SaveOrder(r.Context(), order.CategoryID, order.IDs, order.Masonry)
 		if errors.Is(err, store.ErrInvalidOrder) {
 			writeError(w, http.StatusConflict, "invalid_order", "order must contain each current resource exactly once", nil)
 			return

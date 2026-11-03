@@ -46,43 +46,39 @@ button:hover, [role="button"]:hover, [data-highlighted] { border-color: var(--wm
 input::placeholder { color: var(--wm-muted); }
 [hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-.chassis-app { height: 100%; overflow: auto; }
-.chassis-header { position: sticky; top: 0; z-index: 20; height: 2.6rem; border-bottom: 1px solid var(--wm-border); background: var(--wm-bar); }
-.toolbar { display: flex; align-items: center; height: 100%; gap: 0.35rem; padding: 0 0.75rem; }
-.chassis-icon-button, .icon-button { width: 1.8rem; min-width: 1.8rem; height: 1.8rem; min-height: 0; padding: 0.25rem; line-height: 1; }
-.chassis-icon-button svg { width: 0.875rem; height: 0.875rem; }
+.chassis-app { --layout-gap: 0.6rem; height: 100%; overflow: auto; }
+.chassis-header, .rack-section__header { min-height: 2.25rem; box-shadow: inset 0 -1px var(--wm-border); }
+.chassis-header { position: sticky; top: 0; z-index: 20; height: 2.25rem; background: var(--wm-bar); }
+.toolbar { display: flex; align-items: center; height: 100%; gap: var(--layout-gap); padding: 0 var(--layout-gap); }
+.chassis-icon-button, .icon-button { width: 1.65rem; min-width: 1.65rem; height: 1.65rem; min-height: 0; padding: 0.25rem; line-height: 1; }
+.chassis-icon-button { padding: 0; }
+.chassis-icon-button svg { width: 0.8rem; height: 0.8rem; }
 .theme-toggle-button__icon { display: flex; align-items: center; justify-content: center; }
 .chassis-edit-bar { padding: 0.5rem; border-bottom: 1px solid var(--wm-accent); background: var(--wm-bar); }
 .edit-bar-content, .edit-bar-label { display: flex; align-items: center; gap: 0.75rem; }
 .edit-bar-content { max-width: 80rem; margin: auto; justify-content: space-between; }
 .edit-indicator { width: 1rem; height: 1rem; }
 .edit-hint { color: var(--wm-muted); font-size: 0.8rem; }
-.chassis-rack { width: calc(100% - 1rem); max-width: 80rem; margin: 1rem auto; }
-.category-grid { display: grid; grid-template-columns: repeat(var(--dashboard-columns), minmax(0, 1fr)); gap: 0.6rem; align-items: start; }
+.chassis-rack { width: calc(100% - 2 * var(--layout-gap)); max-width: 80rem; margin: var(--layout-gap) auto; }
+.category-grid { display: grid; grid-template-columns: repeat(var(--dashboard-columns), minmax(0, 1fr)); gap: var(--layout-gap); align-items: start; }
 .category-tile { min-width: 0; }
 .rack-section { border: 1px solid var(--wm-border); background: var(--wm-panel); }
-.rack-section__header { scroll-margin-top: 3.2rem; display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; font-size: 0.9rem; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--wm-border); background: var(--wm-bar); }
-.rack-section__label { overflow-wrap: anywhere; display: flex; align-items: center; gap: 0.45rem; min-width: 0; }
+.rack-section__header { scroll-margin-top: 3.2rem; display: flex; align-items: center; justify-content: space-between; gap: var(--layout-gap); font-size: 0.9rem; padding: 0.2rem var(--layout-gap); background: var(--wm-bar); }
+.rack-section__label { overflow-wrap: anywhere; display: flex; align-items: center; gap: var(--layout-gap); min-width: 0; }
 .rack-section__icon { display: inline-flex; align-items: center; justify-content: center; flex: none; color: var(--wm-muted); font-size: 0.9rem; }
 button.rack-section__icon, [role="button"].rack-section__icon { padding: 0; border: 0; background: transparent; cursor: grab; }
-.rack-section__services { padding: 0.5rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.4rem; }
+.rack-section__services { padding: 0.5rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--layout-gap); }
 .chassis-rack--horizontal .category-grid { grid-template-columns: 1fr; }
 .chassis-rack--horizontal .rack-section__services { grid-template-columns: repeat(var(--dashboard-columns), minmax(0, 1fr)); }
-[data-layout="masonry"] .category-grid {
-  display: block;
-  column-count: 1;
-  column-gap: 0.6rem;
+[data-layout="masonry"].chassis-rack { max-width: 112rem; }
+.masonry-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--masonry-columns), minmax(0, 1fr));
+  gap: var(--layout-gap);
 }
-[data-layout="masonry"] .category-tile { break-inside: avoid; margin-bottom: 0.6rem; }
-@media (min-width: 640px) {
-  [data-layout="masonry"] .category-grid { column-count: min(2, var(--dashboard-columns)); }
-}
-@media (min-width: 1280px) {
-  [data-layout="masonry"] .category-grid { column-count: min(3, var(--dashboard-columns)); }
-}
-@media (min-width: 1920px) {
-  [data-layout="masonry"] .category-grid { column-count: min(4, var(--dashboard-columns)); }
-}
+.masonry-column { display: flex; flex-direction: column; gap: var(--layout-gap); min-width: 0; }
+.masonry-tail { flex: 1; min-height: 3rem; }
+.masonry-tail[data-active] { border-top: 3px solid var(--wm-accent); }
 .drive-bay { scroll-margin-top: 3.2rem; position: relative; display: flex; align-items: center; gap: 0.6rem; width: 100%; min-height: 3rem; padding: 0.25rem 2.75rem 0.25rem 0.5rem; border: 1px solid var(--wm-border); background: var(--wm-panel); text-align: left; }
 .drive-bay__logo { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 1.75rem; height: 1.75rem; padding: 0; border: 0; background: transparent; }
 .drive-bay__logo[role="button"] { cursor: grab; }
@@ -136,7 +132,12 @@ button.rack-section__icon, [role="button"].rack-section__icon { padding: 0; bord
 .toast { display: flex; align-items: start; justify-content: space-between; gap: 0.75rem; padding: 0.75rem; border: 1px solid var(--wm-border); background: var(--wm-panel); }
 .toast[data-type="error"] { border-color: var(--wm-error); }
 .toast[data-ending-style] { display: none; }
-.chassis-loader { width: 2rem; height: 0.5rem; margin: 3rem auto; background: var(--wm-accent); }
+.loading-grid { --dashboard-columns: 4; }
+.loading-placeholder { background: color-mix(in srgb, var(--wm-muted) 12%, var(--wm-panel)); }
+.loading-title { width: 5rem; height: 0.65rem; }
+@media (max-width: 1000px) {
+  .loading-grid { --dashboard-columns: 2; }
+}
 .chassis-error { margin: 2rem; padding: 1rem; color: var(--wm-error); border: 1px solid; }
 @media (max-width: 639px) {
   .layout-toggle, .edit-hint { display: none; }

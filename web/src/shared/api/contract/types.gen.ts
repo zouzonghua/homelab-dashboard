@@ -5,6 +5,7 @@ export type ClientOptions = {
 };
 
 export type DashboardOrderRequest = {
+    masonry?: MasonryOrder;
     /**
      * Omit to reorder categories.
      */
@@ -75,7 +76,20 @@ export type ConfigService = {
     monitorEnabled?: boolean;
 };
 
+export type MasonryOrder = {
+    capacity: number;
+    sizes: Array<number>;
+};
+
+export type MasonryPlacement = {
+    ids: Array<number>;
+    sizes: Array<number>;
+};
+
 export type DashboardSettings = {
+    masonryPlacements?: {
+        [key: string]: MasonryPlacement;
+    };
     /**
      * Optional seed/export date string.
      */

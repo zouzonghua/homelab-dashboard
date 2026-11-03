@@ -18,7 +18,6 @@ const groups = [
     ['N', 'Add a service to the focused group in edit mode'],
     ['R', 'Edit the focused group or service in edit mode'],
     ['D', 'Delete the focused item in edit mode (confirmation required)'],
-    ['Alt + arrows', 'Move the focused item one position in edit mode'],
     ['Space · arrows · Space', 'Reorder using a focused drag handle; Esc cancels'],
   ] },
   { title: 'Dialogs', shortcuts: [
