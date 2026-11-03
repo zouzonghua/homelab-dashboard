@@ -112,6 +112,7 @@ func (s *Store) ReplaceConfig(ctx context.Context, cfg config.Config) error {
 
 	for _, stmt := range []string{
 		`DELETE FROM services`,
+		`DELETE FROM masonry_placements`,
 		`DELETE FROM categories`,
 		`DELETE FROM configs`,
 	} {
@@ -177,6 +178,10 @@ CREATE TABLE IF NOT EXISTS configs (
 	date TEXT NOT NULL,
 	title TEXT NOT NULL,
 	columns INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS masonry_placements (
+	capacity INTEGER PRIMARY KEY,
+	placement TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS categories (
 	id INTEGER PRIMARY KEY AUTOINCREMENT,

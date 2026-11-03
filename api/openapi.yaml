@@ -450,6 +450,8 @@ components:
       type: object
       required: [ids]
       properties:
+        masonry:
+          $ref: "#/components/schemas/MasonryOrder"
         categoryId:
           type: integer
           format: int64
@@ -575,10 +577,43 @@ components:
         monitorEnabled:
           type: boolean
           default: false
+    MasonryOrder:
+      type: object
+      required: [capacity, sizes]
+      properties:
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 5
+        sizes:
+          type: array
+          minItems: 1
+          maxItems: 5
+          items:
+            type: integer
+            minimum: 0
+    MasonryPlacement:
+      type: object
+      required: [ids, sizes]
+      properties:
+        ids:
+          type: array
+          items:
+            type: integer
+            format: int64
+        sizes:
+          type: array
+          items:
+            type: integer
+            minimum: 0
     DashboardSettings:
       type: object
       required: [title, columns]
       properties:
+        masonryPlacements:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/MasonryPlacement"
         date:
           type: string
           description: Optional seed/export date string.

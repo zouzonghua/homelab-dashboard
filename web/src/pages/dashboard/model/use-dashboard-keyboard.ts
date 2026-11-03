@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { arrayMove } from '@dnd-kit/sortable'
 import { useTheme, getNextTheme } from '@/shared/ui/theme'
 import type { useDashboard } from './use-dashboard'
 
@@ -38,19 +37,6 @@ export function useDashboardKeyboard(dashboard: Dashboard, toggleLayout: () => v
       const serviceIndex = serviceElement ? Number(serviceElement.dataset.serviceIndex) : -1
       const service = category?.list[serviceIndex]
 
-      if (event.altKey && !event.ctrlKey && !event.metaKey && dashboard.isEditMode && category && ['arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) {
-        event.preventDefault()
-        const delta = key === 'arrowup' || key === 'arrowleft' ? -1 : 1
-        if (service) {
-          const next = serviceIndex + delta
-          if (category.id != null && next >= 0 && next < category.list.length) dashboard.reorderServices(category.id, arrayMove(category.list, serviceIndex, next))
-        } else {
-          const items = dashboard.config!.items
-          const next = categoryIndex + delta
-          if (next >= 0 && next < items.length) dashboard.reorderCategories(arrayMove(items, categoryIndex, next))
-        }
-        return
-      }
       if (event.ctrlKey || event.metaKey || event.altKey) return
 
       if (['j', 'k', 'arrowdown', 'arrowup', 'arrowleft', 'arrowright', 'home', 'end'].includes(key)) {

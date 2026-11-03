@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { notify as toast } from '@/shared/ui/notifications'
 import { useConfirm } from '@/shared/ui/UIProvider'
-import { subscribeStatus } from '@/shared/api'
+import { subscribeStatus, type MasonryOrder } from '@/shared/api'
 import { dashboardQueries } from '../api/dashboard-queries'
 import {
   exportConfig as exportConfigToFile,
@@ -153,15 +153,23 @@ export function useDashboard() {
     setEditingCategory(null)
   }
 
-  const handleReorderCategories = (newCategories: CategoryWithServices[]) => {
+  const handleReorderCategories = (newCategories: CategoryWithServices[], masonry?: MasonryOrder) => {
     setConfig((prevConfig) => {
       if (!prevConfig) return prevConfig
       const newConfig = { ...prevConfig, items: newCategories }
+      const ids = newCategories.flatMap(({ id }) => id == null ? [] : [id])
+      if (masonry && ids.length === newCategories.length) {
+        newConfig.masonryPlacements = {
+          ...prevConfig.masonryPlacements,
+          [masonry.capacity]: { ids, sizes: masonry.sizes },
+        }
+      }
 
       setTimeout(() => {
         persistConfig(newConfig, 'Category order updated', {
           action: 'reorderCategories',
           categories: newCategories,
+          masonry,
         })
       }, 0)
 

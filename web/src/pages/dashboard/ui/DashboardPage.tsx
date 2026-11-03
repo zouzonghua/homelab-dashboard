@@ -14,7 +14,27 @@ export default function DashboardPage() {
 
   if (dashboard.loading) return (
     <div className="chassis-app">
-      <div className="chassis-loader"></div>
+      <div className="chassis-header" aria-hidden="true">
+        <div className="toolbar">
+          {[0, 1, 2, 3].map((index) => <span key={index} className="chassis-icon-button loading-placeholder" />)}
+        </div>
+      </div>
+      <div role="status" className="chassis-rack">
+        <span className="sr-only">Loading dashboard</span>
+        <div className="category-grid loading-grid" aria-hidden="true">
+          {[0, 1, 2, 3].map((index) => (
+            <div className="rack-section" key={index}>
+              <div className="rack-section__header">
+                <span className="loading-placeholder loading-title" />
+              </div>
+              <div className="rack-section__services">
+                <div className="drive-bay loading-placeholder" />
+                <div className="drive-bay loading-placeholder" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 
@@ -61,6 +81,7 @@ export default function DashboardPage() {
       <ServiceGrid
         categories={dashboard.config?.items || []}
         layout={layout}
+        placements={dashboard.config?.masonryPlacements}
         columns={dashboard.config?.columns || 4}
         onOpenEditService={dashboard.openEditService}
         onOpenAddService={dashboard.openAddService}

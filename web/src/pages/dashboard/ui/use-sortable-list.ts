@@ -34,6 +34,13 @@ export const sortableCollision: CollisionDetection = (args) => {
   }).sort((a, b) => a.data.value - b.data.value)
 }
 
+export const masonryCollision: CollisionDetection = (args) => {
+  const cards = args.droppableContainers.filter(({ data }) => data.current?.columnTail == null)
+  if (!args.pointerCoordinates) return closestCenter({ ...args, droppableContainers: cards })
+  const hits = pointerWithin(args)
+  return hits.length ? hits : sortableCollision({ ...args, droppableContainers: cards })
+}
+
 export function useSortableList<T>(items: T[], ids: UniqueIdentifier[], onReorder?: (items: T[]) => void) {
   const [active, setActive] = useState<{ id: UniqueIdentifier; keyboard: boolean } | null>(null)
   const sensors = useSensors(

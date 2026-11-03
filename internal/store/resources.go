@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -19,7 +20,28 @@ func (s *Store) LoadDashboard(ctx context.Context) (config.Dashboard, error) {
 		&dashboard.Title,
 		&dashboard.Columns,
 	)
-	return dashboard, err
+	if err != nil {
+		return dashboard, err
+	}
+	rows, err := s.db.QueryContext(ctx, `SELECT capacity, placement FROM masonry_placements`)
+	if err != nil {
+		return dashboard, err
+	}
+	defer rows.Close()
+	dashboard.MasonryPlacements = make(map[int]config.MasonryPlacement)
+	for rows.Next() {
+		var capacity int
+		var raw []byte
+		var placement config.MasonryPlacement
+		if err := rows.Scan(&capacity, &raw); err != nil {
+			return dashboard, err
+		}
+		if err := json.Unmarshal(raw, &placement); err != nil {
+			return dashboard, err
+		}
+		dashboard.MasonryPlacements[capacity] = placement
+	}
+	return dashboard, rows.Err()
 }
 
 func (s *Store) ListCategories(ctx context.Context) ([]config.CategoryResource, error) {
@@ -257,9 +279,24 @@ func requireAffected(result sql.Result) error {
 var ErrInvalidOrder = errors.New("invalid resource order")
 
 // SaveOrder replaces the order of all categories or all services in one category.
-func (s *Store) SaveOrder(ctx context.Context, categoryID *int64, ids []int64) error {
+func (s *Store) SaveOrder(ctx context.Context, categoryID *int64, ids []int64, masonry *config.MasonryOrder) error {
 	if len(ids) == 0 {
 		return ErrInvalidOrder
+	}
+	if masonry != nil {
+		if categoryID != nil || masonry.Capacity < 1 || masonry.Capacity > 5 || len(masonry.Sizes) < 1 || len(masonry.Sizes) > 5 {
+			return ErrInvalidOrder
+		}
+		remaining := len(ids)
+		for _, size := range masonry.Sizes {
+			if size < 0 || size > remaining {
+				return ErrInvalidOrder
+			}
+			remaining -= size
+		}
+		if remaining != 0 {
+			return ErrInvalidOrder
+		}
 	}
 	if err := s.ensureSeed(ctx); err != nil {
 		return err
@@ -299,6 +336,16 @@ func (s *Store) SaveOrder(ctx context.Context, categoryID *int64, ids []int64) e
 		if err := requireAffected(result); errors.Is(err, ErrNotFound) {
 			return ErrInvalidOrder
 		} else if err != nil {
+			return err
+		}
+	}
+	if masonry != nil {
+		placement, err := json.Marshal(config.MasonryPlacement{IDs: ids, Sizes: masonry.Sizes})
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `INSERT INTO masonry_placements (capacity, placement) VALUES (?, ?)
+			ON CONFLICT(capacity) DO UPDATE SET placement = excluded.placement`, masonry.Capacity, string(placement)); err != nil {
 			return err
 		}
 	}

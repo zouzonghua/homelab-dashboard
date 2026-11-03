@@ -4,6 +4,7 @@ import type {
   CategoryCreateRequest,
   DashboardSettings,
   GetStatusResponse,
+  MasonryOrder,
   Service,
   ServiceCreateRequest,
 } from '@/shared/api'
@@ -44,7 +45,7 @@ export type SaveConfigOptions =
   | { action: 'createCategory'; category: CategoryWithServices }
   | { action: 'updateCategory'; category: CategoryWithServices }
   | { action: 'deleteCategory'; category: CategoryWithServices }
-  | { action: 'reorderCategories'; categories: CategoryWithServices[] }
+  | { action: 'reorderCategories'; categories: CategoryWithServices[]; masonry?: MasonryOrder }
   | { action: 'createService'; categoryId: Category['id']; service: ServiceViewModel }
   | { action: 'updateService'; service: ServiceViewModel }
   | { action: 'deleteService'; service: ServiceViewModel }
@@ -101,7 +102,7 @@ export async function saveDashboardConfig<T>(nextConfig: T, options: SaveConfigO
       await dashboardApi.deleteCategory(options.category)
       return nextConfig
     case 'reorderCategories':
-      await dashboardApi.saveOrder({ ids: savedIds(options.categories) })
+      await dashboardApi.saveOrder({ ids: savedIds(options.categories), masonry: options.masonry })
       return nextConfig
     case 'createService':
       await dashboardApi.createService(options.categoryId, options.service)
