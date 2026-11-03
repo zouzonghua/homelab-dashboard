@@ -18,20 +18,9 @@ import type {
 } from './dashboard'
 import { saveDashboardConfig } from './dashboard'
 
-export type EditingService = {
-  service: ServiceViewModel
-  categoryName: string
-  serviceIndex: number
-}
-
-export type AddingService = {
-  categoryName: string
-}
-
-export type EditingCategory = {
-  category: CategoryWithServices
-  categoryIndex: number
-}
+export type EditingService = { service: ServiceViewModel; serviceId: number }
+export type AddingService = { categoryId: number }
+export type EditingCategory = { category: CategoryWithServices; categoryId: number }
 
 export function useDashboard() {
   const confirm = useConfirm()
@@ -102,16 +91,23 @@ export function useDashboard() {
     })
   }
 
+  const saveKey = ['dashboard-save']
   const saveMutation = useMutation({
+    mutationKey: saveKey,
+    scope: { id: 'dashboard-save' },
     mutationFn: ({ nextConfig, options }: { nextConfig: DashboardViewModel; options: SaveConfigOptions; successMessage: string }) =>
       saveDashboardConfig(nextConfig, options),
     onSuccess: async (_result, variables) => {
-      await queryClient.invalidateQueries({ queryKey: dashboardQueries.config().queryKey })
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: dashboardQueries.status().queryKey }),
         queryClient.invalidateQueries({ queryKey: dashboardQueries.auditLogs().queryKey }),
       ])
       toast.success(variables.successMessage)
+    },
+    onSettled: () => {
+      if (queryClient.isMutating({ mutationKey: saveKey }) === 1) {
+        return queryClient.invalidateQueries({ queryKey: dashboardQueries.config().queryKey })
+      }
     },
     onError: (error) => {
       console.error('Failed to save API config:', error)
@@ -127,64 +123,17 @@ export function useDashboard() {
     saveMutation.mutate({ nextConfig, successMessage, options })
   }
 
-  const handleEditService = (
-    categoryName: string,
-    updatedService: ServiceFormData,
-    serviceIndex: number,
-  ) => {
-    setConfig((prevConfig) => {
-      if (!prevConfig) return prevConfig
-      const newConfig = { ...prevConfig }
-      const categoryIndex = newConfig.items.findIndex((item) => item.name === categoryName)
-
-      if (categoryIndex !== -1) {
-        const nextService = {
-          ...newConfig.items[categoryIndex].list[serviceIndex],
-          ...updatedService,
-        }
-        newConfig.items[categoryIndex].list[serviceIndex] = nextService
-
-        setTimeout(() => {
-          persistConfig(newConfig, 'Configuration saved', { action: 'updateService', service: nextService })
-        }, 0)
-      }
-
-      return newConfig
-    })
+  const handleEditService = (serviceId: number, updatedService: ServiceFormData) => {
+    const service = config?.items.flatMap((category) => category.list).find((item) => item.id === serviceId)
+    if (!config || !service) return
+    void persistConfig(config, 'Configuration saved', { action: 'updateService', service: { ...service, ...updatedService } })
     setEditingService(null)
   }
 
-  const handleAddService = (categoryName: string, newService: ServiceFormData) => {
+  const handleAddService = (categoryId: number, newService: ServiceFormData) => {
     if (!config) return
-    const categoryId = config.items.find((category) => category.name === categoryName)?.id
-    if (categoryId == null) {
-      toast.error('Category is missing a server ID, cannot add service')
-      return
-    }
     void persistConfig(config, `Service "${newService.name}" added`, { action: 'createService', categoryId, service: newService })
     setAddingService(null)
-  }
-
-  const handleDeleteService = (categoryName: string, serviceIndex: number) => {
-    setConfig((prevConfig) => {
-      if (!prevConfig) return prevConfig
-      const newConfig = { ...prevConfig }
-      const categoryIndex = newConfig.items.findIndex((item) => item.name === categoryName)
-
-      if (categoryIndex !== -1) {
-        const deletedService = newConfig.items[categoryIndex].list[serviceIndex]
-        newConfig.items[categoryIndex].list.splice(serviceIndex, 1)
-
-        setTimeout(() => {
-          persistConfig(newConfig, `Service "${deletedService.name}" deleted`, {
-            action: 'deleteService',
-            service: deletedService,
-          })
-        }, 0)
-      }
-
-      return newConfig
-    })
   }
 
   const handleAddCategory = (newCategory: CategoryWithServices) => {
@@ -193,51 +142,14 @@ export function useDashboard() {
     setIsAddingCategory(false)
   }
 
-  const handleDeleteCategory = (categoryName: string) => {
-    setConfig((prevConfig) => {
-      if (!prevConfig) return prevConfig
-      const newConfig = { ...prevConfig }
-      const categoryIndex = newConfig.items.findIndex((item) => item.name === categoryName)
-
-      if (categoryIndex !== -1) {
-        const deletedCategory = newConfig.items[categoryIndex]
-        newConfig.items.splice(categoryIndex, 1)
-
-        setTimeout(() => {
-          persistConfig(newConfig, `Category "${categoryName}" deleted`, {
-            action: 'deleteCategory',
-            category: deletedCategory,
-          })
-        }, 0)
-      }
-
-      return newConfig
-    })
+  const handleOpenEditCategory = (category: CategoryWithServices) => {
+    if (category.id != null) setEditingCategory({ category, categoryId: category.id })
   }
 
-  const handleOpenEditCategory = (category: CategoryWithServices, categoryIndex: number) => {
-    setEditingCategory({ category, categoryIndex })
-  }
-
-  const handleEditCategory = (categoryIndex: number, updatedCategory: Pick<CategoryWithServices, 'name' | 'icon'>) => {
-    setConfig((prevConfig) => {
-      if (!prevConfig) return prevConfig
-      const newConfig = { ...prevConfig }
-      newConfig.items[categoryIndex] = {
-        ...newConfig.items[categoryIndex],
-        name: updatedCategory.name,
-        icon: updatedCategory.icon,
-      }
-
-      setTimeout(() => {
-        persistConfig(newConfig, 'Category updated', {
-          action: 'updateCategory',
-          category: newConfig.items[categoryIndex],
-        })
-      }, 0)
-
-      return newConfig
-    })
+  const handleEditCategory = (categoryId: number, updatedCategory: Pick<CategoryWithServices, 'name' | 'icon'>) => {
+    const category = config?.items.find((item) => item.id === categoryId)
+    if (!config || !category) return
+    void persistConfig(config, 'Category updated', { action: 'updateCategory', category: { ...category, ...updatedCategory } })
     setEditingCategory(null)
   }
 
@@ -257,22 +169,22 @@ export function useDashboard() {
     })
   }
 
-  const handleReorderServices = (categoryName: string, newServices: ServiceViewModel[]) => {
+  const handleReorderServices = (categoryId: number, newServices: ServiceViewModel[]) => {
     setConfig((prevConfig) => {
       if (!prevConfig) return prevConfig
-      const newConfig = { ...prevConfig }
-      const categoryIndex = newConfig.items.findIndex((item) => item.name === categoryName)
-
-      if (categoryIndex !== -1) {
-        newConfig.items[categoryIndex].list = newServices
-
-        setTimeout(() => {
-          persistConfig(newConfig, 'Service order updated', {
-            action: 'reorderServices',
-            services: newServices,
-          })
-        }, 0)
+      const category = prevConfig.items.find((item) => item.id === categoryId)
+      if (!category) return prevConfig
+      const newConfig = {
+        ...prevConfig,
+        items: prevConfig.items.map((item) => item === category ? { ...item, list: newServices } : item),
       }
+
+      setTimeout(() => {
+        persistConfig(newConfig, 'Service order updated', {
+          action: 'reorderServices',
+          services: newServices,
+        })
+      }, 0)
 
       return newConfig
     })
@@ -333,11 +245,11 @@ export function useDashboard() {
     auditLogsOpen,
     openAddCategory: () => setIsAddingCategory(true),
     closeAddCategory: () => setIsAddingCategory(false),
-    openEditService: (categoryName: string, service: ServiceViewModel, serviceIndex: number) => {
-      setEditingService({ service, categoryName, serviceIndex })
+    openEditService: (service: ServiceViewModel) => {
+      if (service.id != null) setEditingService({ service, serviceId: service.id })
     },
     closeEditService: () => setEditingService(null),
-    openAddService: (categoryName: string) => setAddingService({ categoryName }),
+    openAddService: (categoryId: number) => setAddingService({ categoryId }),
     closeAddService: () => setAddingService(null),
     openEditCategory: handleOpenEditCategory,
     closeEditCategory: () => setEditingCategory(null),
@@ -346,17 +258,18 @@ export function useDashboard() {
     toggleEditMode: handleToggleEditMode,
     editService: handleEditService,
     addService: handleAddService,
-    deleteService: async (categoryName: string, serviceIndex: number) => {
-      const service = config?.items.find((category) => category.name === categoryName)?.list[serviceIndex]
-      if (!service || !await confirm(`Delete service "${service.name}"?`)) return false
-      handleDeleteService(categoryName, serviceIndex)
+    deleteService: async (serviceId: number) => {
+      const service = config?.items.flatMap((category) => category.list).find((item) => item.id === serviceId)
+      if (!config || !service || !await confirm(`Delete service "${service.name}"?`)) return false
+      void persistConfig(config, `Service "${service.name}" deleted`, { action: 'deleteService', service })
       return true
     },
     addCategory: handleAddCategory,
     editCategory: handleEditCategory,
-    deleteCategory: async (categoryName: string) => {
-      if (!await confirm(`Delete category "${categoryName}"? This also deletes every service in the group.`)) return false
-      handleDeleteCategory(categoryName)
+    deleteCategory: async (categoryId: number) => {
+      const category = config?.items.find((item) => item.id === categoryId)
+      if (!config || !category || !await confirm(`Delete category "${category.name}"? This also deletes every service in the group.`)) return false
+      void persistConfig(config, `Category "${category.name}" deleted`, { action: 'deleteCategory', category })
       return true
     },
     reorderCategories: handleReorderCategories,

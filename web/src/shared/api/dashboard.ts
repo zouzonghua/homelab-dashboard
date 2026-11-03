@@ -5,6 +5,7 @@ import type {
   CategoryListResponse,
   CategoryUpdateRequest,
   DashboardSettings,
+  DashboardOrderRequest,
   GetStatusResponse,
   ImportConfigRequest,
   Service,
@@ -78,6 +79,7 @@ function toUpdateServiceRequest(service: ServiceWriteSource): ServiceUpdateReque
 }
 
 export const dashboardApi = {
+  saveOrder: (order: DashboardOrderRequest) => apiClient.put<null>('/api/v1/order', order),
   getSettings: () => apiClient.get<DashboardSettings>('/api/v1/dashboard'),
   listCategories: () => listResponseData<CategoryListResponse>('/api/v1/categories'),
   listServices: () => listResponseData<ServiceListResponse>('/api/v1/services'),

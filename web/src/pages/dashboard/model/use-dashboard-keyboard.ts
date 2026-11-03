@@ -30,8 +30,9 @@ export function useDashboardKeyboard(dashboard: Dashboard, toggleLayout: () => v
       if (!event.altKey && target?.closest('[aria-roledescription="sortable"]') && [' ', 'enter', 'escape', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'].includes(key)) return
       if (event.repeat && !['j', 'k', 'arrowdown', 'arrowup', 'arrowleft', 'arrowright'].includes(key)) return
 
-      const section = target?.closest<HTMLElement>('[data-category-name]')
-      const categoryIndex = dashboard.config?.items.findIndex((category) => category.name === section?.dataset.categoryName) ?? -1
+      const section = target?.closest<HTMLElement>('[data-category-id]')
+      const categoryId = Number(section?.dataset.categoryId)
+      const categoryIndex = dashboard.config?.items.findIndex((category) => category.id === categoryId) ?? -1
       const category = dashboard.config?.items[categoryIndex]
       const serviceElement = target?.closest<HTMLElement>('[data-service-index]')
       const serviceIndex = serviceElement ? Number(serviceElement.dataset.serviceIndex) : -1
@@ -42,7 +43,7 @@ export function useDashboardKeyboard(dashboard: Dashboard, toggleLayout: () => v
         const delta = key === 'arrowup' || key === 'arrowleft' ? -1 : 1
         if (service) {
           const next = serviceIndex + delta
-          if (next >= 0 && next < category.list.length) dashboard.reorderServices(category.name, arrayMove(category.list, serviceIndex, next))
+          if (category.id != null && next >= 0 && next < category.list.length) dashboard.reorderServices(category.id, arrayMove(category.list, serviceIndex, next))
         } else {
           const items = dashboard.config!.items
           const next = categoryIndex + delta
@@ -74,16 +75,16 @@ export function useDashboardKeyboard(dashboard: Dashboard, toggleLayout: () => v
           if (!dashboard.isEditMode) dashboard.toggleEditMode()
           dashboard.openAddCategory()
           break
-        case 'n': if (dashboard.isEditMode && category) dashboard.openAddService(category.name); break
+        case 'n': if (dashboard.isEditMode && category?.id != null) dashboard.openAddService(category.id); break
         case 'r':
           if (!dashboard.isEditMode || !category) return
-          if (service) dashboard.openEditService(category.name, service, serviceIndex)
-          else dashboard.openEditCategory(category, categoryIndex)
+          if (service) dashboard.openEditService(service)
+          else dashboard.openEditCategory(category)
           break
         case 'd':
           if (!dashboard.isEditMode || !category) return
-          if (service) void dashboard.deleteService(category.name, serviceIndex)
-          else void dashboard.deleteCategory(category.name)
+          if (service?.id != null) void dashboard.deleteService(service.id)
+          else if (!service && category.id != null) void dashboard.deleteCategory(category.id)
           break
         case 'escape': if (dashboard.isEditMode) dashboard.toggleEditMode(); break
         default: return

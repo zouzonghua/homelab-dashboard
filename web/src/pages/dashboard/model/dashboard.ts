@@ -82,35 +82,40 @@ export async function fetchDashboardConfig(): Promise<DashboardViewModel> {
   return buildDashboardViewModel(settings, categories, services)
 }
 
+function savedIds(items: { id?: number }[]): number[] {
+  return items.map(({ id }) => {
+    if (id == null) throw new Error('Cannot reorder an unsaved item')
+    return id
+  })
+}
+
 export async function saveDashboardConfig<T>(nextConfig: T, options: SaveConfigOptions): Promise<T> {
   switch (options.action) {
     case 'createCategory':
       await dashboardApi.createCategory(options.category)
       return nextConfig
     case 'updateCategory':
-      await dashboardApi.updateCategory(options.category)
+      await dashboardApi.updateCategory({ ...options.category, order: undefined })
       return nextConfig
     case 'deleteCategory':
       await dashboardApi.deleteCategory(options.category)
       return nextConfig
     case 'reorderCategories':
-      await Promise.all(
-        options.categories.map((category, index) => dashboardApi.updateCategory({ ...category, order: index })),
-      )
+      await dashboardApi.saveOrder({ ids: savedIds(options.categories) })
       return nextConfig
     case 'createService':
       await dashboardApi.createService(options.categoryId, options.service)
       return nextConfig
     case 'updateService':
-      await dashboardApi.updateService(options.service)
+      await dashboardApi.updateService({ ...options.service, order: undefined, categoryId: undefined })
       return nextConfig
     case 'deleteService':
       await dashboardApi.deleteService(options.service)
       return nextConfig
     case 'reorderServices':
-      await Promise.all(
-        options.services.map((service, index) => dashboardApi.updateService({ ...service, order: index })),
-      )
+      const categoryId = options.services[0]?.categoryId
+      if (categoryId == null) throw new Error('Missing category for service order')
+      await dashboardApi.saveOrder({ categoryId, ids: savedIds(options.services) })
       return nextConfig
   }
 }

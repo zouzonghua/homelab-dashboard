@@ -1,9 +1,11 @@
 import { Toolbar } from '@base-ui/react/toolbar'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faEdit, faCheck, faTableColumns, faTableList, faKeyboard } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faEdit, faCheck, faTableColumns, faTableList, faBorderAll, faKeyboard } from '@fortawesome/free-solid-svg-icons'
 import ThemeToggle from '@/shared/ui/ThemeToggle'
 import ConfigTools from './ConfigTools'
-import type { DashboardLayout } from '../model/use-dashboard-layout'
+import { nextLayout, type DashboardLayout } from '../model/use-dashboard-layout'
+
+const layoutIcons = { vertical: faTableColumns, horizontal: faTableList, masonry: faBorderAll }
 
 type HeaderProps = {
   onOpenHelp: () => void
@@ -25,8 +27,8 @@ export default function Header(props: HeaderProps) {
         <FontAwesomeIcon icon={props.isEditMode ? faCheck : faEdit} />
       </Toolbar.Button>
       {props.isEditMode && <Toolbar.Button className="chassis-icon-button" onClick={props.onAddCategory} aria-label="Add new category" title="Add category (A)"><FontAwesomeIcon icon={faPlus} /></Toolbar.Button>}
-      <Toolbar.Button className="chassis-icon-button layout-toggle" onClick={props.onToggleLayout} aria-label={`Switch to ${props.layout === 'vertical' ? 'horizontal' : 'vertical'} layout`} title="Switch layout (V)">
-        <FontAwesomeIcon icon={props.layout === 'vertical' ? faTableList : faTableColumns} />
+      <Toolbar.Button className="chassis-icon-button layout-toggle" onClick={props.onToggleLayout} aria-label={`Switch to ${nextLayout[props.layout]} layout`} title="Switch layout (V)">
+        <FontAwesomeIcon icon={layoutIcons[nextLayout[props.layout]]} />
       </Toolbar.Button>
       <ThemeToggle />
       <Toolbar.Button className="chassis-icon-button" onClick={props.onOpenHelp} aria-label="Keyboard shortcuts (?)" title="Keyboard shortcuts (?)"><FontAwesomeIcon icon={faKeyboard} /></Toolbar.Button>
