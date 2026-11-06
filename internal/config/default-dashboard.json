@@ -36,6 +36,12 @@
           "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/miniflux.png",
           "url": "https://miniflux.bh.zouzonghua.cn",
           "target": "_blank"
+        },
+        {
+          "name": "Readeck",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/readeck.png",
+          "url": "https://readeck.bh.zouzonghua.cn",
+          "target": "_blank"
         }
       ]
     },
@@ -65,6 +71,12 @@
           "name": "Seerr",
           "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/jellyseerr.png",
           "url": "https://seerr.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "MeTube",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/metube.png",
+          "url": "https://metube.bh.zouzonghua.cn",
           "target": "_blank"
         }
       ]
@@ -150,6 +162,12 @@
           "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/uptime-kuma.png",
           "url": "https://uptime.bh.zouzonghua.cn",
           "target": "_blank"
+        },
+        {
+          "name": "RustFS",
+          "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/rustfs.png",
+          "url": "https://rustfs.bh.zouzonghua.cn",
+          "target": "_blank"
         }
       ]
     },
@@ -233,6 +251,18 @@
           "name": "ntfy",
           "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons/png/ntfy.png",
           "url": "https://ntfy.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "IT-Tools",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/it-tools.png",
+          "url": "https://it-tools.bh.zouzonghua.cn",
+          "target": "_blank"
+        },
+        {
+          "name": "Vikunja",
+          "logo": "https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/vikunja.png",
+          "url": "https://vikunja.bh.zouzonghua.cn",
           "target": "_blank"
         }
       ]

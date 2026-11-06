@@ -67,7 +67,7 @@ The app has no built-in user accounts. Protect shared or public access with an a
 
 ## Data and configuration
 
-The default JSON at [`internal/config/default-dashboard.json`](internal/config/default-dashboard.json) contains **7 groups and 32 shortcuts**, based on the Authentik snapshot from 2026-10-26. Group order follows the JSON array; numeric prefixes and the dashboard's own shortcut are removed.
+The default JSON at [`internal/config/default-dashboard.json`](internal/config/default-dashboard.json) contains **7 groups and 37 shortcuts**, based on the Authentik snapshot from 2026-10-26. Group order follows the JSON array; numeric prefixes and the dashboard's own shortcut are removed.
 
 An empty database is initialized from this JSON. Changing the seed does **not** overwrite an existing database. Use **Config tools → Import config** to replace saved data, and export a backup first. Authentik changes are not synchronized automatically.
 

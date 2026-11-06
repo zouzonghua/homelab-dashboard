@@ -67,7 +67,7 @@ docker compose -f deploy/compose.yml up -d --build
 
 ## 数据与配置
 
-默认 JSON 位于 [`internal/config/default-dashboard.json`](internal/config/default-dashboard.json)，基于 2026-10-26 的 Authentik 快照整理，包含 **7 个分组、32 个入口**。分组顺序由数组决定，已移除编号和面板自身的快捷方式。
+默认 JSON 位于 [`internal/config/default-dashboard.json`](internal/config/default-dashboard.json)，基于 2026-10-26 的 Authentik 快照整理，包含 **7 个分组、37 个入口**。分组顺序由数组决定，已移除编号和面板自身的快捷方式。
 
 空数据库首次使用时导入默认 JSON；修改默认文件**不会覆盖已有数据库**。需要替换已保存的数据时，先导出备份，再通过 **Config tools → Import config** 导入。后续 Authentik 变更不会自动同步。
 
